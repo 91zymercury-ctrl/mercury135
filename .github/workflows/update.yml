@@ -1,8 +1,8 @@
 name: 更新捡漏雷达
 
 on:
-  schedule:
-    - cron: "17 * * * *"   # 每小时第 17 分钟（UTC），GitHub 高峰期可能会延迟几分钟
+  # schedule:                # GitHub 的服务器被什么值得买拦截，暂停定时抓取
+  #   - cron: "17 * * * *"
   workflow_dispatch:        # 也可以在 Actions 页面手动运行
   push:                     # 修改网页或脚本后立即运行一次（数据提交不会触发）
     branches: [main]
