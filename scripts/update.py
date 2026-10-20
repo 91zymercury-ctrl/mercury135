@@ -1,10 +1,10 @@
 """捡漏雷达 · GitHub 版数据更新脚本（只用 Python 标准库）。
 
-由你的 Mac 每小时运行一次（GitHub 的服务器会被什么值得买拦截）：
-1. 抓取什么值得买“发现”好价 RSS（公开订阅源）。
+由 Claude 定时任务每 6 小时运行一次（什么值得买的订阅源会拦截普通程序，Claude 的网页读取工具可以正常读取）：
+1. 读入 Claude 抓到的好价列表（--items-json），或直接抓取 RSS（本地调试用）。
 2. 新条目按爆料日期合并进 data/days/YYYY-MM-DD.json（提交到仓库，作为价格历史）。
 3. 生成 site/data.json（最近 30 天），随网页一起发布到 GitHub Pages。
-4. 可选：命中关键词目标价时，通过 Bark / Server酱推送到手机（目标价放在仓库 Secrets，不公开）。
+4. 命中关键词目标价（RADAR_TARGETS 环境变量）时在输出里列出 hits；配置了 Bark / Server酱 时也会推送。
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ FEED = os.environ.get("RADAR_FEED", "https://faxian.smzdm.com/feed")
 UA = "Mozilla/5.0 (compatible; BargainRadar/1.0; +https://github.com) personal RSS reader"
 KEEP_DAYS = 60       # 仓库里保留的历史天数
 PUBLISH_DAYS = 30    # 网页显示的天数
-SCHEDULE = "Mac 开机时每小时自动更新"
+SCHEDULE = "每 6 小时自动更新"
 NS = {"content": "http://purl.org/rss/1.0/modules/content/"}
 MALLS = ["京东", "天猫超市", "天猫国际", "天猫精选", "天猫", "淘宝", "拼多多", "抖音", "苏宁", "唯品会", "亚马逊", "得物",
          "小米商城", "小米有品", "华为商城", "Apple Store", "当当", "网易严选", "盒马", "山姆", "Costco", "快手", "国美"]
@@ -101,6 +101,45 @@ def parse(xml_bytes: bytes, seen_at: str) -> list[dict]:
         out.append({
             "i": m.group(1), "t": title, "d": dt.astimezone(CN).isoformat(), "m": first_mall(desc),
             "p": (item.findtext("focus_pic") or "").strip(), "c": desc[:60], "s": seen_at,
+        })
+    return out
+
+
+def parse_items_json(path: str, seen_at: str) -> list[dict]:
+    """读入 Claude 用 WebFetch 抓到的列表：[{title, link, pubDate, pic, mall, desc}, ...]"""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        data = data.get("items") or data.get("data") or []
+    if not isinstance(data, list):
+        raise RuntimeError("好价列表格式不对")
+    out = []
+    for o in data:
+        if not isinstance(o, dict):
+            continue
+        title = clean(str(o.get("title", "")))
+        link = str(o.get("link", "")).strip()
+        m = re.search(r"/p/(\d+)", link)
+        if not m or not TITLE_PRICE.search(title):
+            continue  # 没有明确价格的不收录，不猜价
+        pub = str(o.get("pubDate", "")).strip()
+        dt = None
+        try:
+            dt = parsedate_to_datetime(pub)
+        except (TypeError, ValueError, IndexError):
+            try:
+                dt = datetime.fromisoformat(pub)
+            except ValueError:
+                dt = None
+        if dt is None:
+            dt = now()
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=CN)
+        desc = clean(str(o.get("desc", "")))
+        pic = str(o.get("pic", "")).strip()
+        out.append({
+            "i": m.group(1), "t": title, "d": dt.astimezone(CN).isoformat(),
+            "m": clean(str(o.get("mall", ""))) or first_mall(desc),
+            "p": pic if pic.startswith("https://") else "", "c": desc[:60], "s": seen_at,
         })
     return out
 
@@ -190,6 +229,9 @@ def push(title: str, body: str, url: str) -> None:
               "application/x-www-form-urlencoded")
 
 
+HITS: list[dict] = []
+
+
 def alerts(new_items: list[dict]) -> int:
     raw = os.environ.get("RADAR_TARGETS", "").strip()
     if not raw or not new_items:
@@ -213,12 +255,15 @@ def alerts(new_items: list[dict]) -> int:
                 continue
             if it["i"] in done:
                 continue
+            HITS.append({"kw": " ".join(words), "max": cap, "price": price, "title": it["t"], "link": f"https://www.smzdm.com/p/{it['i']}/"})
             try:
-                push(f"🎯 {price:g}元 · {' '.join(words)}", it["t"], f"https://www.smzdm.com/p/{it['i']}/")
+                if os.environ.get("BARK_URL") or os.environ.get("SERVERCHAN_SENDKEY"):
+                    push(f"🎯 {price:g}元 · {' '.join(words)}", it["t"], f"https://www.smzdm.com/p/{it['i']}/")
                 sent += 1
             except Exception as e:  # noqa: BLE001 —— 推送失败不影响数据更新
                 print(f"推送失败：{e}", file=sys.stderr)
             done.add(it["i"])
+            break
     save_json(ALERTED, sorted(done)[-3000:], compact=True)
     return sent
 
@@ -230,8 +275,14 @@ def main() -> int:
         return 0
     seen_at = now().isoformat()
     status = {"lastRun": seen_at, "ok": True, "fetched": 0, "added": 0, "alerts": 0, "error": None, "schedule": SCHEDULE}
+    args = sys.argv[1:]
     try:
-        items = parse(fetch_feed(), seen_at)
+        if "--fail" in args:  # Claude 抓取失败时，只记录原因并重新发布旧数据
+            raise RuntimeError(args[args.index("--fail") + 1] if len(args) > args.index("--fail") + 1 else "抓取失败")
+        if "--items-json" in args:
+            items = parse_items_json(args[args.index("--items-json") + 1], seen_at)
+        else:
+            items = parse(fetch_feed(), seen_at)
         added = merge(items)
         status.update(fetched=len(items), added=len(added), alerts=alerts(added))
     except Exception as e:  # noqa: BLE001 —— 失败时保留旧数据，网页显示失败原因
@@ -241,7 +292,7 @@ def main() -> int:
     prune()
     total = build_site(status)
     save_json(ROOT / "data" / "status.json", status)
-    print(json.dumps({**status, "published": total}, ensure_ascii=False))
+    print(json.dumps({**status, "published": total, "hits": HITS}, ensure_ascii=False))
     return 0
 
 

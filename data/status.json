@@ -1,9 +1,9 @@
 {
-"lastRun": "2026-10-20T23:02:22+08:00",
+"lastRun": "2026-10-20T23:18:33+08:00",
 "ok": true,
 "fetched": 30,
 "added": 0,
 "alerts": 0,
 "error": null,
-"schedule": "Mac 开机时每小时自动更新"
+"schedule": "每 6 小时自动更新"
 }
