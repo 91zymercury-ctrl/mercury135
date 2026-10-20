@@ -1,6 +1,6 @@
 """捡漏雷达 · GitHub 版数据更新脚本（只用 Python 标准库）。
 
-由 GitHub Actions 每小时运行一次：
+由你的 Mac 每小时运行一次（GitHub 的服务器会被什么值得买拦截）：
 1. 抓取什么值得买“发现”好价 RSS（公开订阅源）。
 2. 新条目按爆料日期合并进 data/days/YYYY-MM-DD.json（提交到仓库，作为价格历史）。
 3. 生成 site/data.json（最近 30 天），随网页一起发布到 GitHub Pages。
@@ -12,6 +12,8 @@ import html
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -24,13 +26,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DAYS_DIR = ROOT / "data" / "days"
 SITE_DIR = ROOT / "site"
-ALERTED = ROOT / "data" / "alerted.json"
+ALERTED = ROOT / ".local" / "alerted.json"   # 本机私有，不提交
 CN = timezone(timedelta(hours=8))
 FEED = os.environ.get("RADAR_FEED", "https://faxian.smzdm.com/feed")
 UA = "Mozilla/5.0 (compatible; BargainRadar/1.0; +https://github.com) personal RSS reader"
 KEEP_DAYS = 60       # 仓库里保留的历史天数
 PUBLISH_DAYS = 30    # 网页显示的天数
-SCHEDULE = "每小时自动更新"
+SCHEDULE = "Mac 开机时每小时自动更新"
 NS = {"content": "http://purl.org/rss/1.0/modules/content/"}
 MALLS = ["京东", "天猫超市", "天猫国际", "天猫精选", "天猫", "淘宝", "拼多多", "抖音", "苏宁", "唯品会", "亚马逊", "得物",
          "小米商城", "小米有品", "华为商城", "Apple Store", "当当", "网易严选", "盒马", "山姆", "Costco", "快手", "国美"]
@@ -57,6 +59,14 @@ def first_mall(text: str) -> str:
 
 
 def fetch_feed() -> bytes:
+    local = os.environ.get("RADAR_FEED_FILE")
+    if local:  # Mac 上由 curl 先下载好订阅源
+        body = Path(local).read_bytes()
+        head = body[:2000].decode("utf-8", "replace")
+        if "<rss" not in head and "<feed" not in head:
+            snippet = re.sub(r"\s+", " ", clean(body[:4000].decode("utf-8", "replace")))[:120]
+            raise RuntimeError(f"返回的不是 RSS：{snippet}")
+        return body
     req = urllib.request.Request(FEED, headers={"User-Agent": UA, "Accept": "application/rss+xml, application/xml"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -156,18 +166,28 @@ def title_price(t: str) -> float | None:
     return float(m.group(1)) if m else None
 
 
+def _post(url: str, data: bytes, ctype: str) -> None:
+    """优先用 curl（macOS 自带证书最可靠），没有 curl 再用 urllib。"""
+    if shutil.which("curl"):
+        r = subprocess.run(["curl", "-sS", "-f", "-m", "15", "-X", "POST", "-H", f"Content-Type: {ctype}", "--data-binary", "@-", url],
+                           input=data, capture_output=True)
+        if r.returncode != 0:
+            raise RuntimeError(r.stderr.decode("utf-8", "replace")[:200])
+        return
+    urllib.request.urlopen(urllib.request.Request(url, data=data, headers={"Content-Type": ctype}), timeout=15).read()
+
+
 def push(title: str, body: str, url: str) -> None:
     bark = os.environ.get("BARK_URL", "").strip()
     sckey = os.environ.get("SERVERCHAN_SENDKEY", "").strip()
     if bark:
-        data = json.dumps({"title": title, "body": body, "url": url, "group": "捡漏雷达"}).encode()
-        req = urllib.request.Request(bark.rstrip("/"), data=data, headers={"Content-Type": "application/json; charset=utf-8"})
-        urllib.request.urlopen(req, timeout=15).read()
+        _post(bark.rstrip("/"), json.dumps({"title": title, "body": body, "url": url, "group": "捡漏雷达"}).encode(),
+              "application/json; charset=utf-8")
     if sckey:
         m = re.match(r"^sctp(\d+)t", sckey)
         ep = f"https://{m.group(1)}.push.ft07.com/send/{sckey}.send" if m else f"https://sctapi.ftqq.com/{sckey}.send"
-        data = urllib.parse.urlencode({"title": title[:100], "desp": f"{body}\n\n[查看爆料]({url})"}).encode()
-        urllib.request.urlopen(urllib.request.Request(ep, data=data), timeout=15).read()
+        _post(ep, urllib.parse.urlencode({"title": title[:100], "desp": f"{body}\n\n[查看爆料]({url})"}).encode(),
+              "application/x-www-form-urlencoded")
 
 
 def alerts(new_items: list[dict]) -> int:
@@ -204,6 +224,10 @@ def alerts(new_items: list[dict]) -> int:
 
 
 def main() -> int:
+    if "--build-only" in sys.argv:  # GitHub Actions：只用仓库里的数据生成网页，不抓取
+        status = load_json(ROOT / "data" / "status.json", {"lastRun": None, "ok": False, "error": "还没有数据", "schedule": SCHEDULE})
+        print(json.dumps({**status, "published": build_site(status)}, ensure_ascii=False))
+        return 0
     seen_at = now().isoformat()
     status = {"lastRun": seen_at, "ok": True, "fetched": 0, "added": 0, "alerts": 0, "error": None, "schedule": SCHEDULE}
     try:

@@ -1,24 +1,23 @@
-name: 更新捡漏雷达
+name: 发布捡漏雷达网页
 
+# 数据由 Mac 抓取后推送到仓库（GitHub 的服务器会被什么值得买拦截）。
+# 每次推送后，这里用仓库里的数据生成网页并发布到 GitHub Pages。
 on:
-  # schedule:                # GitHub 的服务器被什么值得买拦截，暂停定时抓取
-  #   - cron: "17 * * * *"
-  workflow_dispatch:        # 也可以在 Actions 页面手动运行
-  push:                     # 修改网页或脚本后立即运行一次（数据提交不会触发）
+  push:
     branches: [main]
-    paths: ["site/**", "scripts/**", ".github/workflows/**"]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: radar-update
-  cancel-in-progress: false
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  update:
+  deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -26,33 +25,14 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: 抓取好价并生成网页数据
-        run: python scripts/update.py
-        env:
-          RADAR_TARGETS: ${{ secrets.RADAR_TARGETS }}
-          BARK_URL: ${{ secrets.BARK_URL }}
-          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
-
-      - name: 保存价格历史
-        run: |
-          git config user.name "radar-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data
-          if ! git diff --cached --quiet; then
-            git commit -m "数据更新 $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')"
-            git push
-          fi
-
+      - name: 生成网页数据
+        run: python scripts/update.py --build-only
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
-
       - id: deploy
         uses: actions/deploy-pages@v4
