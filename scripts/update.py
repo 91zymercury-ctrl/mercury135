@@ -58,11 +58,16 @@ def first_mall(text: str) -> str:
 
 def fetch_feed() -> bytes:
     req = urllib.request.Request(FEED, headers={"User-Agent": UA, "Accept": "application/rss+xml, application/xml"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        body = r.read(5_000_000)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            body, code, ctype = r.read(5_000_000), r.status, r.headers.get("Content-Type", "")
+    except urllib.error.HTTPError as e:
+        snippet = re.sub(r"\s+", " ", clean((e.read(4000) or b"").decode("utf-8", "replace")))[:120]
+        raise RuntimeError(f"什么值得买拒绝访问（HTTP {e.code}）：{snippet}") from e
     head = body[:2000].decode("utf-8", "replace")
     if "<rss" not in head and "<feed" not in head:
-        raise RuntimeError("返回的不是 RSS（可能被要求验证），本次跳过")
+        snippet = re.sub(r"\s+", " ", clean(body[:4000].decode("utf-8", "replace")))[:120]
+        raise RuntimeError(f"返回的不是 RSS（HTTP {code}，{ctype}）：{snippet}")
     return body
 
 
@@ -207,7 +212,7 @@ def main() -> int:
         status.update(fetched=len(items), added=len(added), alerts=alerts(added))
     except Exception as e:  # noqa: BLE001 —— 失败时保留旧数据，网页显示失败原因
         reason = "连接什么值得买失败" if isinstance(e, (OSError, urllib.error.URLError)) else "解析订阅源失败" if isinstance(e, ET.ParseError) else str(e)
-        status.update(ok=False, error=f"{reason}，网页显示的是之前的数据（{type(e).__name__}）"[:200])
+        status.update(ok=False, error=f"{reason}，网页显示的是之前的数据"[:300])
         print("抓取失败：", status["error"], file=sys.stderr)
     prune()
     total = build_site(status)
