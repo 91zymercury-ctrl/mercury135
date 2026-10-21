@@ -3,13 +3,24 @@
 由 Claude 定时任务每 6 小时运行一次（什么值得买的订阅源会拦截普通程序，Claude 的网页读取工具可以正常读取）：
 1. 读入 Claude 抓到的好价列表（--items-json），或直接抓取 RSS（本地调试用）。
 2. 新条目按爆料日期合并进 data/days/YYYY-MM-DD.json（提交到仓库，作为价格历史）。
-3. 生成 site/data.json（最近 30 天），随网页一起发布到 GitHub Pages。
-4. 命中关键词目标价（RADAR_TARGETS 环境变量）时在输出里列出 hits；配置了 Bark / Server酱 时也会推送。
+3. 追踪清单（data/watch.json）：读入 Claude 抓到的什么值得买百科「全网比价」（--watch-dir），
+   每个平台的最低价按时间存进 data/prices/<id>.json，用来画 30 天走势。
+4. 生成 site/data.json（最近 30 天），随网页一起发布到 GitHub Pages。
+5. 命中关键词目标价（RADAR_TARGETS 环境变量）时在输出里列出 hits；配置了 Bark / Server酱 时也会推送。
+
+追踪清单维护：
+  --watch-plan                         列出要读取的百科页面
+  --add-watch '{"name":..,"kw":..,"not":..,"wiki":..,"issue":N}'   新增或更新一个追踪商品
+  --remove-watch <id 或名称>            删除追踪商品（价格记录一并删除）
+  --issue-done N                       记录已处理的 GitHub issue
 """
 from __future__ import annotations
 
+import hashlib
 import html
 import json
+import statistics
+import unicodedata
 import os
 import re
 import shutil
@@ -25,6 +36,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DAYS_DIR = ROOT / "data" / "days"
+WATCH_FILE = ROOT / "data" / "watch.json"
+PRICES_DIR = ROOT / "data" / "prices"
+WIKI_ID = re.compile(r"^[0-9a-z]{5,12}$")
 SITE_DIR = ROOT / "site"
 ALERTED = ROOT / ".local" / "alerted.json"   # 本机私有，不提交
 CN = timezone(timedelta(hours=8))
@@ -185,6 +199,149 @@ def prune() -> None:
             f.unlink()
 
 
+# ---------------- 追踪清单 ----------------
+
+def squash(s: str) -> str:
+    """统一大小写、全半角并去掉空白，方便“iphone17”匹配“iPhone 17”。"""
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", s or "").lower())
+
+
+def platform(mall: str) -> str:
+    """把商城名归到平台：天猫超市/天猫精选 → 天猫，京东自营 → 京东。"""
+    m = unicodedata.normalize("NFKC", mall or "").strip()
+    for key, name in (("京东", "京东"), ("天猫", "天猫"), ("淘宝", "淘宝"), ("拼多多", "拼多多"), ("抖音", "抖音"),
+                      ("苏宁", "苏宁"), ("唯品会", "唯品会"), ("得物", "得物"), ("小米", "小米商城"), ("华为", "华为商城"),
+                      ("apple", "Apple 官网"), ("苹果官网", "Apple 官网"), ("亚马逊", "亚马逊"), ("快手", "快手")):
+        if key in m.lower():
+            return name
+    return m[:8] or "其他"
+
+
+def load_watch() -> dict:
+    w = load_json(WATCH_FILE, {})
+    if not isinstance(w, dict):
+        w = {}
+    w.setdefault("items", [])
+    w.setdefault("issues", [])
+    return w
+
+
+def wiki_id(v) -> str:
+    v = str(v or "").strip()
+    m = re.search(r"wiki\.smzdm\.com/p/([0-9a-z]+)", v)
+    v = m.group(1) if m else v.strip("/")
+    if v and not WIKI_ID.match(v):
+        raise RuntimeError(f"百科编号格式不对：{v}")
+    return v
+
+
+def add_watch(raw: str) -> dict:
+    o = json.loads(raw)
+    name = clean(str(o.get("name", "")))[:60]
+    kw = " ".join(clean(str(o.get("kw", ""))).split())[:80] or name
+    if not name:
+        raise RuntimeError("缺少商品名称 name")
+    wid = wiki_id(o.get("wiki"))
+    w = load_watch()
+    item = next((x for x in w["items"] if (wid and x.get("wiki") == wid) or squash(x.get("kw", "")) == squash(kw)), None)
+    if item is None:
+        item = {"id": wid or "k" + hashlib.sha1(squash(kw).encode()).hexdigest()[:8], "added": now().strftime("%Y-%m-%d")}
+        w["items"].append(item)
+    item.update(name=name, kw=kw, **{"not": " ".join(clean(str(o.get("not", ""))).split())[:80]}, wiki=wid)
+    if o.get("issue"):
+        w["issues"] = sorted(set(w["issues"]) | {int(o["issue"])})
+    save_json(WATCH_FILE, w)
+    return item
+
+
+def remove_watch(key: str) -> list[str]:
+    w = load_watch()
+    gone = [x for x in w["items"] if key in (x.get("id"), x.get("name"), x.get("wiki"))]
+    w["items"] = [x for x in w["items"] if x not in gone]
+    for x in gone:
+        (PRICES_DIR / f"{x['id']}.json").unlink(missing_ok=True)
+    save_json(WATCH_FILE, w)
+    return [x["name"] for x in gone]
+
+
+def watch_plan() -> list[dict]:
+    return [{"id": x["id"], "name": x["name"], "wiki_url": f"https://wiki.smzdm.com/p/{x['wiki']}/" if x.get("wiki") else None}
+            for x in load_watch()["items"]]
+
+
+def parse_offers(doc) -> tuple[str, list[dict]]:
+    """校验 Claude 从百科页读出的比价列表：{"title":..,"offers":[{"mall","price","orig","link"}]}。"""
+    if not isinstance(doc, dict):
+        raise RuntimeError("比价结果格式不对")
+    if doc.get("error"):
+        raise RuntimeError(clean(str(doc["error"]))[:80])
+    offers = []
+    for o in doc.get("offers") or []:
+        if not isinstance(o, dict):
+            continue
+        try:
+            p = float(str(o.get("price", "")).replace("¥", "").replace(",", "").strip())
+        except ValueError:
+            continue
+        mall = clean(str(o.get("mall", "")))[:20]
+        if not mall or not 0 < p < 1_000_000:
+            continue
+        try:
+            orig = float(str(o.get("orig") or "").replace("¥", "").replace(",", "").strip() or 0) or None
+        except ValueError:
+            orig = None
+        link = str(o.get("link") or "").strip()
+        offers.append({"m": mall, "p": round(p, 2), "o": orig if orig and orig >= p else None,
+                       "u": link if re.match(r"^https://[\w.-]+/", link) else ""})
+    if offers:  # 价格远低于其他报价的多半是配件或读错，丢掉
+        med = statistics.median(x["p"] for x in offers)
+        offers = [x for x in offers if x["p"] >= med * 0.4]
+    if not offers:
+        raise RuntimeError("页面上没有读到有效价格")
+    offers.sort(key=lambda x: x["p"])
+    return clean(str(doc.get("title", "")))[:120], offers
+
+
+def merge_watch(folder: str, seen_at: str) -> dict:
+    """把 --watch-dir 里每个 <id>.json 的比价结果并入 data/prices/<id>.json。"""
+    w = load_watch()
+    done, failed = [], []
+    for item in w["items"]:
+        if not item.get("wiki"):
+            continue
+        f = PRICES_DIR / f"{item['id']}.json"
+        hist = load_json(f, {"id": item["id"], "samples": []})
+        src = Path(folder) / f"{item['id']}.json"
+        try:
+            if not src.exists():
+                raise RuntimeError("本次没有读取")
+            title, offers = parse_offers(json.loads(src.read_text(encoding="utf-8")))
+        except Exception as e:  # noqa: BLE001 —— 单个商品失败不影响其他
+            hist["lastError"] = {"t": seen_at, "error": str(e)[:120]}
+            save_json(f, hist)
+            failed.append(f"{item['name']}（{str(e)[:40]}）")
+            continue
+        lo: dict[str, float] = {}
+        for o in offers:
+            k = platform(o["m"])
+            lo[k] = min(lo.get(k, o["p"]), o["p"])
+        prev = hist["samples"][-1] if hist["samples"] else None
+        sample = {"t": seen_at, "lo": lo}
+        if prev and (datetime.fromisoformat(seen_at) - datetime.fromisoformat(prev["t"])) < timedelta(hours=1):
+            hist["samples"][-1] = sample  # 一小时内重复运行，覆盖上一条
+            prev = hist["samples"][-2] if len(hist["samples"]) > 1 else None
+        else:
+            hist["samples"].append(sample)
+        cutoff = (now() - timedelta(days=KEEP_DAYS)).isoformat()
+        hist["samples"] = [s for s in hist["samples"] if s["t"] >= cutoff]
+        hist["latest"] = {"t": seen_at, "title": title, "offers": offers[:20]}
+        hist["lastError"] = None
+        save_json(f, hist)
+        done.append({"item": item, "low": min(lo.values()), "prevLow": min(prev["lo"].values()) if prev and prev.get("lo") else None,
+                     "offer": offers[0]})
+    return {"done": done, "failed": failed}
+
+
 def build_site(status: dict) -> int:
     cutoff = (now() - timedelta(days=PUBLISH_DAYS)).strftime("%Y-%m-%d")
     items, seen = [], set()
@@ -196,7 +353,14 @@ def build_site(status: dict) -> int:
                 seen.add(x["i"])
                 items.append(x)
     items.sort(key=lambda x: x["d"], reverse=True)
-    save_json(SITE_DIR / "data.json", {"generatedAt": now().isoformat(), "status": status, "items": items}, compact=True)
+    pub_cut = (now() - timedelta(days=PUBLISH_DAYS)).isoformat()
+    watch = []
+    for x in load_watch()["items"]:
+        h = load_json(PRICES_DIR / f"{x['id']}.json", {})
+        watch.append({k: x.get(k) for k in ("id", "name", "kw", "not", "wiki", "added")} | {
+            "samples": [s for s in h.get("samples", []) if s["t"] >= pub_cut],
+            "latest": h.get("latest"), "lastError": h.get("lastError")})
+    save_json(SITE_DIR / "data.json", {"generatedAt": now().isoformat(), "status": status, "items": items, "watch": watch}, compact=True)
     return len(items)
 
 
@@ -232,26 +396,51 @@ def push(title: str, body: str, url: str) -> None:
 HITS: list[dict] = []
 
 
-def alerts(new_items: list[dict]) -> int:
+def load_targets() -> list[dict]:
     raw = os.environ.get("RADAR_TARGETS", "").strip()
-    if not raw or not new_items:
-        return 0
+    if not raw:
+        return []
     try:
         targets = json.loads(raw)
     except ValueError:
         print("RADAR_TARGETS 不是合法 JSON，跳过提醒", file=sys.stderr)
+        return []
+    out = []
+    for t in targets if isinstance(targets, list) else []:
+        try:
+            out.append({"words": [squash(w) for w in str(t.get("kw", "")).split() if w], "max": float(t.get("max"))})
+        except (TypeError, ValueError, AttributeError):
+            continue
+    return [t for t in out if t["words"]]
+
+
+def watch_alerts(done: list[dict]) -> None:
+    """追踪商品的全网最低价第一次降到目标价以下时提醒（上一次还高于目标价，避免每 6 小时重复提醒）。"""
+    for d in done:
+        text = squash(d["item"]["name"] + " " + d["item"]["kw"])
+        for t in load_targets():
+            if not all(w in text for w in t["words"]) or d["low"] > t["max"]:
+                continue
+            if d["prevLow"] is not None and d["prevLow"] <= t["max"]:
+                continue
+            o = d["offer"]
+            HITS.append({"kw": " ".join(t["words"]), "max": t["max"], "price": d["low"],
+                         "title": f"{d['item']['name']}（{o['m']}，全网比价）",
+                         "link": o["u"] or f"https://wiki.smzdm.com/p/{d['item']['wiki']}/"})
+            break
+
+
+def alerts(new_items: list[dict]) -> int:
+    targets = load_targets()
+    if not targets or not new_items:
         return 0
     done = set(load_json(ALERTED, []))
     sent = 0
     for it in new_items:
         price = title_price(it["t"])
         for t in targets:
-            words = [w.lower() for w in str(t.get("kw", "")).split() if w]
-            try:
-                cap = float(t.get("max"))
-            except (TypeError, ValueError):
-                continue
-            if not words or price is None or price > cap or not all(w in it["t"].lower() for w in words):
+            words, cap = t["words"], t["max"]
+            if price is None or price > cap or not all(w in squash(it["t"]) for w in words):
                 continue
             if it["i"] in done:
                 continue
@@ -273,9 +462,31 @@ def main() -> int:
         status = load_json(ROOT / "data" / "status.json", {"lastRun": None, "ok": False, "error": "还没有数据", "schedule": SCHEDULE})
         print(json.dumps({**status, "published": build_site(status)}, ensure_ascii=False))
         return 0
+    args = sys.argv[1:]
+    arg = lambda flag: args[args.index(flag) + 1] if flag in args and len(args) > args.index(flag) + 1 else None  # noqa: E731
+    if "--watch-plan" in args:
+        print(json.dumps(watch_plan(), ensure_ascii=False))
+        return 0
+    if "--add-watch" in args:
+        print(json.dumps(add_watch(arg("--add-watch") or "{}"), ensure_ascii=False))
+        return 0
+    if "--remove-watch" in args:
+        print(json.dumps({"removed": remove_watch(arg("--remove-watch") or "")}, ensure_ascii=False))
+        return 0
+    if "--issue-done" in args:
+        w = load_watch()
+        w["issues"] = sorted(set(w["issues"]) | {int(arg("--issue-done"))})
+        save_json(WATCH_FILE, w)
+        return 0
     seen_at = now().isoformat()
     status = {"lastRun": seen_at, "ok": True, "fetched": 0, "added": 0, "alerts": 0, "error": None, "schedule": SCHEDULE}
-    args = sys.argv[1:]
+    if "--watch-dir" in args:
+        try:
+            res = merge_watch(arg("--watch-dir") or "", seen_at)
+            watch_alerts(res["done"])
+            status.update(watched=len(res["done"]), watchFailed=res["failed"])
+        except Exception as e:  # noqa: BLE001
+            status.update(watched=0, watchFailed=[f"全部失败：{str(e)[:80]}"])
     try:
         if "--fail" in args:  # Claude 抓取失败时，只记录原因并重新发布旧数据
             raise RuntimeError(args[args.index("--fail") + 1] if len(args) > args.index("--fail") + 1 else "抓取失败")

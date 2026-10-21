@@ -52,7 +52,7 @@ a { color: inherit; }
 .stat b { display: block; font-family: var(--num); font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
 .stat span { font-size: 12px; color: var(--ink-3); }
 .search { display: flex; gap: 8px; }
-input[type=text], input[type=number], select { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 11px; outline: none; }
+input[type=text], input[type=search], input[type=number], select { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 11px; outline: none; }
 input:focus, select:focus { border-color: var(--accent); }
 .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .chips::-webkit-scrollbar { display: none; }
@@ -84,7 +84,7 @@ h2 { font-size: 17px; margin: 0; }
 .empty { font-size: 13px; color: var(--ink-3); padding: 14px; background: var(--surface); border-radius: 12px; border: 1px dashed var(--line); }
 .panel { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; display: grid; gap: 10px; }
 .row { display: flex; gap: 8px; align-items: center; }
-.row.wrap { flex-wrap: wrap; }
+.row.wrap { flex-wrap: wrap; display: flex; padding: 0; margin: 0; max-width: none; } /* 不要继承页面容器 .wrap 的内边距 */
 .btn { border: 0; border-radius: 10px; padding: 9px 14px; background: var(--ink); color: var(--bg); font-weight: 700; white-space: nowrap; }
 .btn.accent { background: var(--accent); color: #fff; }
 .btn.ghost { background: var(--surface-2); color: var(--ink); }
@@ -115,6 +115,37 @@ details p { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
 .hist .list-item { font-size: 13px; }
 .note { font-size: 12px; color: var(--ink-3); }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 60; max-width: calc(100vw - 32px); }
+/* 追踪 · 平台颜色（按平台固定，不按排名；已用配色校验脚本检查色盲区分度） */
+:root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s-other: #8f8b82; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s-other: #7f7b73; } }
+:root[data-theme="dark"] { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s-other: #7f7b73; }
+.hscroll.watch { grid-auto-columns: 62%; }
+@media (min-width: 600px) { .hscroll.watch { grid-auto-columns: 40%; } }
+.wcard .spark { width: 100%; height: 30px; display: block; }
+.card.add { border: 1.5px dashed var(--line); box-shadow: none; background: transparent; align-items: center; justify-content: center; color: var(--ink-2); font-size: 14px; min-height: 150px; }
+.pill.low { background: var(--good-soft); color: var(--good); }
+.cmp { background: var(--surface); border-radius: 12px; padding: 2px 12px; }
+.cmp-row { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 4px 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.cmp-row:first-child { border-top: 0; }
+.cmp-row .key { width: 14px; height: 3px; border-radius: 2px; }
+.cmp-row .src { grid-column: 2 / -1; font-size: 11.5px; color: var(--ink-3); margin-top: -4px; display: flex; gap: 8px; flex-wrap: wrap; }
+.cmp-row .p { font-family: var(--num); font-weight: 700; font-variant-numeric: tabular-nums; }
+.cmp-row .gap { font-family: var(--num); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+.cmp-row.best .p { color: var(--accent); }
+.chartbox { position: relative; }
+.chartbox svg:focus { outline: none; }
+.chartbox svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tip { position: absolute; top: 6px; pointer-events: none; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 6px 9px; font-size: 12px; min-width: 120px; z-index: 2; }
+.tip .tt { color: var(--ink-3); font-size: 11px; margin-bottom: 2px; }
+.tip .tr { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tip .tr b { font-family: var(--num); font-variant-numeric: tabular-nums; }
+.tip .tr span:last-child { color: var(--ink-3); }
+.lkey { display: inline-block; width: 12px; height: 2px; border-radius: 1px; flex: none; }
+.dkey { display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); flex: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ext { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.ext a { text-decoration: none; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -128,15 +159,16 @@ details p { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
   <div class="status" id="status">正在连接数据……</div>
   <div class="stats">
     <div class="stat"><b id="sDeals">—</b><span>收录好价</span></div>
-    <div class="stat"><b id="sProd">—</b><span>商品</span></div>
+    <div class="stat"><b id="sProd">—</b><span>追踪商品</span></div>
     <div class="stat"><b id="sDays">—</b><span>已观测天数</span></div>
   </div>
-  <div class="search"><input type="text" id="q" placeholder="搜索商品、品牌、型号" autocomplete="off"></div>
+  <div class="search"><input type="search" id="q" placeholder="搜索任何商品，比如 iPhone 17" autocomplete="off" enterkeyhint="search"></div>
   <div class="chips" id="catChips"></div>
   <div id="sections"></div>
   <details class="panel">
     <summary>数据从哪来？评分怎么算？</summary>
-    <p>数据来源：什么值得买“发现”好价订阅源，由 Claude 每 6 小时读取一次（只读公开订阅源），网页打开时读取最近一次的结果，不需要登录。价格是爆料发布时的标题价，没有在商城页面核实，属于“部分核实”价格，下单前请在商城确认。</p>
+    <p>好价：什么值得买“发现”好价订阅源，由 Claude 每 6 小时读取一次（只读公开订阅源），网页打开时读取最近一次的结果，不需要登录。价格是爆料发布时的标题价，没有在商城页面核实，属于“部分核实”价格，下单前请在商城确认。</p>
+    <p>追踪商品：每 6 小时读取一次什么值得买百科的“全网比价”，记下京东、天猫等各平台当时的最低价，30 天走势就是这些记录连成的线，从开始追踪那天起积累；拼多多等平台的价格来自好价爆料，在图上用菱形标出。比价价格可能已含国补、优惠券或会员价，以商城页面为准。</p>
     <p>评分 0–100：基础 30 分，加上相对近 30 天中位价的降幅（最多 30）、接近或刷新已观测最低价（最多 20）、72 小时内快速降价（最多 10）、社区爆料信号（5），再扣除会员、凑单、预售、新人等条件（2–8 分）和翻新、临期等风险。历史记录少时乘以较低的可信度系数。商家标注的原价不参与加分。</p>
     <p>“已观测最低价”只代表本雷达记录到的最低价，不等于商品的真实历史最低价。超过 24 小时的爆料价视为过期，不当作当前价。</p>
   </details>
@@ -262,11 +294,60 @@ function scoreProduct(p, now) {
 }
 
 /* ---------------- 状态 ---------------- */
-const S = { days: new Map(), status: null, targets: [], alerts: [], products: [], deals: 0, cat: "", q: "", ready: false, db: null, canWrite: false, seenAlerts: Number(store("radar_seen_alerts") || 0) };
+const S = { days: new Map(), status: null, targets: [], alerts: [], products: [], deals: 0, cat: "", q: "", ready: false, db: null, canWrite: false, seenAlerts: Number(store("radar_seen_alerts") || 0), watch: [], items: [] };
+
+/* ---------------- 追踪商品：平台、比价、走势 ---------------- */
+const REPO = "91zymercury-ctrl/mercury135";
+const squash = (s) => norm(s).toLowerCase().replace(/\s+/g, "");
+// 平台顺序固定，颜色跟着平台走，不随筛选或排名变化
+const PLATS = [["京东", "京东", "--s1"], ["天猫", "天猫", "--s2"], ["拼多多", "拼多多", "--s3"], ["淘宝", "淘宝", "--s4"], ["抖音", "抖音", "--s5"], ["苏宁", "苏宁", "--s6"],
+  ["唯品会", "唯品会"], ["得物", "得物"], ["小米", "小米商城"], ["华为", "华为商城"], ["apple", "Apple 官网"], ["苹果官网", "Apple 官网"], ["亚马逊", "亚马逊"], ["快手", "快手"]];
+function platformOf(mall) { const m = norm(mall).trim(); for (const [k, n] of PLATS) if (m.toLowerCase().includes(k)) return n; return m.slice(0, 8) || "其他"; }
+const pcolor = (plat) => { const r = PLATS.find((x) => x[1] === plat && x[2]); return `var(${r ? r[2] : "--s-other"})`; };
+const porder = (plat) => { const i = PLATS.findIndex((x) => x[1] === plat); return i < 0 ? 99 : i; };
+const fmtDay = (t) => new Date(t).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
+const searchLinks = (q) => [["什么值得买", "https://search.smzdm.com/?c=home&s="], ["京东", "https://so.m.jd.com/ware/search.action?keyword="], ["淘宝", "https://s.taobao.com/search?q="], ["拼多多", "https://mobile.yangkeduo.com/search_result.html?search_key="]]
+  .map(([n, u]) => `<a href="${u}${encodeURIComponent(q)}" target="_blank" rel="noopener noreferrer">${n} ↗</a>`).join("");
+
+function deriveWatch(w, now) {
+  const words = String(w.kw || w.name || "").split(/\s+/).map(squash).filter(Boolean);
+  const nots = String(w.not || "").split(/\s+/).map(squash).filter(Boolean);
+  const samples = (w.samples || []).map((s) => ({ t: Date.parse(s.t), lo: s.lo || {} })).filter((s) => s.t && Object.keys(s.lo).length).sort((a, b) => a.t - b.t);
+  const offers = (w.latest && w.latest.offers) || [];
+  const curT = w.latest ? Date.parse(w.latest.t) : 0;
+  // 相关爆料：标题包含全部关键词、不含排除词；价格低于参考价 40% 的多半是配件，去掉
+  let deals = [];
+  for (const it of S.items) {
+    const tt = squash(it.t);
+    if (!words.length || !words.every((x) => tt.includes(x)) || nots.some((x) => tt.includes(x))) continue;
+    const pt = parseTitle(it.t);
+    if (!pt || !(pt.price > 0)) continue;
+    const blob = `${pt.tag} ${pt.suffix} ${it.t} ${it.c || ""}`;
+    deals.push({ id: it.i, price: pt.price, t: Date.parse(it.d) || 0, mall: it.m || "", plat: platformOf(it.m || ""), title: it.t, suffix: pt.suffix, cond: COND.filter(([, re]) => re.test(blob)).map((x) => x[0]) });
+  }
+  const ref = offers.length ? offers[0].p : deals.length ? median(deals.map((d) => d.price)) : 0;
+  if (ref) deals = deals.filter((d) => d.price >= ref * 0.4);
+  deals.sort((a, b) => b.t - a.t);
+  // 当前各平台最低：比价取最近一次读取，爆料只取 72 小时内的
+  const rows = new Map();
+  for (const o of offers) { const pl = platformOf(o.m); const r = rows.get(pl); if (!r || o.p < r.price) rows.set(pl, { plat: pl, price: o.p, src: "比价", t: curT, url: o.u || "", mall: o.m, orig: o.o }); }
+  for (const d of deals) {
+    if (now - d.t > 3 * D) continue;
+    const r = rows.get(d.plat);
+    if (!r || d.price < r.price) rows.set(d.plat, { plat: d.plat, price: d.price, src: "爆料", t: d.t, url: `https://www.smzdm.com/p/${encodeURIComponent(d.id)}/`, mall: d.mall, cond: d.cond, suffix: d.suffix });
+  }
+  const cmp = [...rows.values()].sort((a, b) => a.price - b.price);
+  const lows = samples.map((s) => ({ t: s.t, v: Math.min(...Object.values(s.lo)) }));
+  const all = lows.map((x) => x.v).concat(deals.filter((d) => now - d.t <= 30 * D).map((d) => d.price));
+  return Object.assign(w, { samples, offers, curT, deals, cmp, best: cmp[0] || null, lows,
+    lo30: all.length ? Math.min(...all) : null, hi30: all.length ? Math.max(...all) : null,
+    since: Math.min(...[Date.parse(w.added) || Infinity, ...samples.map((s) => s.t)]) });
+}
 
 function rebuild() {
   const items = new Map();
   for (const d of S.days.values()) for (const it of d.items || []) if (it && it.i && !items.has(it.i)) items.set(it.i, it);
+  S.items = [...items.values()];
   const groups = new Map();
   for (const it of items.values()) {
     const pt = parseTitle(it.t);
@@ -283,6 +364,7 @@ function rebuild() {
     g.risks = RISK.filter(([re]) => g.points.some((x) => re.test(x.title))).map(([, l, v]) => [l, v]);
     g.first = Math.min(...g.points.map((x) => x.t));
     g.last = Math.max(...g.points.map((x) => x.t));
+    g.latest = g.points.reduce((a, b) => (b.t > a.t ? b : a));
     Object.assign(g, scoreProduct(g, now));
     if (STOCKUP.has(g.cat)) g.tags.push("stockup");
     if (DIGITAL.has(g.cat)) g.tags.push("digital");
@@ -293,6 +375,7 @@ function rebuild() {
   S.deals = items.size;
   const allT = [...items.values()].map((x) => Date.parse(x.d)).filter(Boolean);
   S.spanDays = allT.length ? Math.max(1, Math.ceil((Math.max(...allT) - Math.min(...allT)) / D)) : 0;
+  S.watch.forEach((w) => deriveWatch(w, now));
 }
 
 /* ---------------- 渲染 ---------------- */
@@ -303,19 +386,63 @@ function card(p) {
   b.className = "card";
   b.innerHTML = `<div class="c-top"><span class="c-cat" aria-hidden="true">${CAT_E[p.cat] || "🛍️"}</span>${p.score != null ? `<span class="pill ${hot ? "hot" : ""}">${p.score}分</span>` : `<span class="pill">已过期</span>`}</div>
     <div class="c-name">${esc(p.name)}</div>
-    <div class="row"><span class="price">${fresh ? money(p.best.price) : `<span class="muted">${yuan(p.points[p.points.length - 1].price)}</span>`}</span>${p.dropPct ? `<span class="drop">↓${p.dropPct}%</span>` : ""}</div>
-    <div class="c-meta"><span>${esc((fresh ? p.best : p.points[0]).mall || "商城未注明")}</span><span>${ago(fresh ? p.best.t : p.last)}</span>${fresh && p.best.cond.length ? `<span class="badge">${esc(COND.find((x) => x[0] === p.best.cond[0])[2])}${p.best.cond.length > 1 ? " 等" : ""}</span>` : ""}</div>`;
+    <div class="row"><span class="price">${fresh ? money(p.best.price) : `<span class="muted">${yuan(p.latest.price)}</span>`}</span>${p.dropPct ? `<span class="drop">↓${p.dropPct}%</span>` : ""}</div>
+    <div class="c-meta"><span>${esc((fresh ? p.best : p.latest).mall || "商城未注明")}</span><span>${ago(fresh ? p.best.t : p.last)}</span>${fresh && p.best.cond.length ? `<span class="badge">${esc(COND.find((x) => x[0] === p.best.cond[0])[2])}${p.best.cond.length > 1 ? " 等" : ""}</span>` : ""}</div>`;
   b.addEventListener("click", () => openDetail(p));
   return b;
 }
-function section(title, sub, list, emptyText, limit = 14) {
+function section(title, sub, list, emptyText, limit = 14, mk = card) {
   const wrap = document.createElement("section");
   wrap.innerHTML = `<div class="sec-head"><h2>${title}</h2><small>${sub}</small></div>`;
   const box = document.createElement("div");
   if (!list.length) { box.className = "empty"; box.textContent = emptyText; }
-  else { box.className = "hscroll"; list.slice(0, limit).forEach((p) => box.append(card(p))); }
+  else { box.className = "hscroll"; list.slice(0, limit).forEach((p) => box.append(mk(p))); }
   wrap.append(box);
   return wrap;
+}
+function sparkline(w) {
+  const pts = w.lows;
+  if (pts.length < 2) return `<div class="note">${w.samples.length ? `${fmtDay(w.samples[0].t)} 开始记录` : w.wiki ? "等待第一次读取" : "只记录爆料价"}</div>`;
+  const W = 120, Hh = 30, t0 = pts[0].t, t1 = Math.max(Date.now(), pts[pts.length - 1].t);
+  const vs = pts.map((p) => p.v), lo = Math.min(...vs), hi = Math.max(...vs), r = hi - lo || 1;
+  const x = (t) => 2 + ((t - t0) / Math.max(1, t1 - t0)) * (W - 4), y = (v) => 3 + (1 - (v - lo) / r) * (Hh - 6);
+  let d = ""; pts.forEach((p, i) => { d += i ? `H${x(p.t).toFixed(1)}V${y(p.v).toFixed(1)}` : `M${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`; });
+  d += `H${x(t1).toFixed(1)}`;
+  return `<svg class="spark" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--ink-2)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function watchCard(w) {
+  const b = document.createElement("button");
+  b.className = "card wcard";
+  const best = w.best;
+  let pill = `<span class="pill">${w.cmp.length} 个平台</span>`;
+  if (best && w.lo30 != null && w.lows.length >= 2 && best.price <= w.lo30) pill = `<span class="pill low">30 天最低</span>`;
+  else if (best && w.lo30 != null && best.price > w.lo30) pill = `<span class="pill">高于低点 ${((best.price - w.lo30) / w.lo30 * 100).toFixed(0)}%</span>`;
+  b.innerHTML = `<div class="c-top"><span class="c-cat" aria-hidden="true">📌</span>${pill}</div>
+    <div class="c-name">${esc(w.name)}</div>
+    <div class="row"><span class="price">${best ? money(best.price) : `<span class="muted" style="font-size:14px">${w.lastError ? "读取失败" : "暂无价格"}</span>`}</span>${best ? `<span class="muted">${esc(best.plat)}</span>` : ""}</div>
+    ${sparkline(w)}
+    <div class="c-meta"><span>${w.lo30 != null ? "30 天最低 " + yuan(w.lo30) : "开始追踪 " + fmtDay(w.since)}</span>${w.curT ? `<span>${ago(w.curT)}更新</span>` : ""}</div>`;
+  b.addEventListener("click", () => openWatch(w));
+  return b;
+}
+function addCard() {
+  const b = document.createElement("button");
+  b.className = "card add";
+  b.innerHTML = `<span style="font-size:24px">＋</span><span>追踪新商品</span>`;
+  b.addEventListener("click", () => { const q = $("#q"); q.focus(); q.scrollIntoView({ block: "center" }); toast("输入商品名，没追踪过的可以直接加入追踪"); });
+  return b;
+}
+function untracked(q) {
+  const box = document.createElement("div");
+  box.className = "panel";
+  const title = `追踪：${q}`;
+  const body = `由捡漏雷达网页提交。Claude 会找到这个商品的什么值得买百科页，加入追踪清单，每 6 小时记录一次各平台价格。\n\n可以在这里补充型号、容量、颜色等：\n\n`;
+  box.innerHTML = `<div><b>还没追踪「${esc(q)}」</b><div class="muted">加入后每 6 小时记录一次京东、天猫等平台的价格，30 天走势从加入那天开始积累。</div></div>
+    <a class="btn accent" style="text-align:center;text-decoration:none" target="_blank" rel="noopener noreferrer"
+       href="https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}">加入追踪 ↗</a>
+    <div class="note">会打开 GitHub 提交页，用仓库主人的账号点 Submit 即可，下一次更新（最多 6 小时）时加入。也可以直接在 Claude 里说“追踪 ${esc(q)}”。</div>
+    <div class="ext"><span class="muted">现在去平台看：</span>${searchLinks(q)}</div>`;
+  return box;
 }
 function matchesTarget(p, t) {
   const words = String(t.kw || "").toLowerCase().split(/\s+/).filter(Boolean);
@@ -328,9 +455,10 @@ function render() {
   else if (!st) statusEl.innerHTML = `等待第一次数据更新。`;
   else statusEl.innerHTML = `<span>上次更新：${st.lastRun ? fmtTime(Date.parse(st.lastRun)) + "（" + ago(Date.parse(st.lastRun)) + "）" : "—"}</span>
     <span>${st.ok ? `本次抓取 ${st.fetched ?? 0} 条，新增 ${st.added ?? 0} 条` : `<span class="err">上次更新失败：${esc(st.error || "未知原因")}</span>`}</span>
+    ${st.watched != null ? `<span>${st.watchFailed && st.watchFailed.length ? `<span class="err">比价读取失败：${esc(st.watchFailed.join("、"))}</span>` : `比价 ${st.watched} 件已更新`}</span>` : ""}
     <span>${esc(st.schedule || "")}</span>`;
   $("#sDeals").textContent = S.ready ? S.deals : "—";
-  $("#sProd").textContent = S.ready ? S.products.length : "—";
+  $("#sProd").textContent = S.ready ? S.watch.length : "—";
   $("#sDays").textContent = S.ready ? S.spanDays : "—";
   // 分类筛选
   const cats = ["", ...CATS.map((c) => c[0]), "其他"].filter((c) => !c || S.products.some((p) => p.cat === c));
@@ -338,20 +466,34 @@ function render() {
     const b = document.createElement("button"); b.className = "chip" + (S.cat === c ? " on" : ""); b.textContent = c ? `${CAT_E[c]} ${c}` : "全部";
     b.addEventListener("click", () => { S.cat = c; render(); }); return b;
   }));
-  const q = S.q.trim().toLowerCase();
-  const pool = S.products.filter((p) => (!S.cat || p.cat === S.cat) && (!q || q.split(/\s+/).every((w) => p.name.toLowerCase().includes(w))));
+  const q = S.q.trim();
+  const qw = q.split(/\s+/).map(squash).filter(Boolean);
+  const hit = (s) => qw.every((w) => squash(s).includes(w));
+  const pool = S.products.filter((p) => (!S.cat || p.cat === S.cat) && (!qw.length || hit(p.name)));
   const live = pool.filter((p) => p.best);
   const byScore = (a, b) => (b.score ?? -1) - (a.score ?? -1) || b.last - a.last;
   const sec = $("#sections");
   sec.replaceChildren();
   if (!S.ready) { sec.innerHTML = `<div class="empty">正在加载……</div>`; return; }
-  if (!S.products.length) { sec.innerHTML = `<div class="empty">还没有数据。定时任务第一次运行后，这里会出现什么值得买上的最新好价。</div>`; return; }
-  const targetHits = live.filter((p) => S.targets.some((t) => matchesTarget(p, t)));
-  if (q || S.cat) {
-    sec.append(section(`找到 ${pool.length} 件`, "按评分排序，已过期的排在后面", pool.slice().sort(byScore), "没有符合条件的商品", 400));
+  if (qw.length) {
+    const ws = S.watch.filter((w) => hit(w.name + " " + w.kw));
+    if (ws.length) {
+      const s = section("📌 追踪中", "点开看各平台比价和 30 天走势", ws, "", 50, watchCard);
+      s.querySelector(".hscroll").classList.add("watch");
+      sec.append(s);
+    } else sec.append(untracked(q));
+  }
+  if (qw.length || S.cat) {
+    sec.append(section(`相关好价 ${pool.length} 件`, "全部品类 · 价格高低都显示 · 最新的在前", pool.slice().sort((a, b) => b.last - a.last), qw.length ? "最近 30 天的好价爆料里没有这个商品" : "没有符合条件的商品", 400));
     const grid = sec.lastChild.querySelector(".hscroll"); if (grid) grid.className = "grid";
     return;
   }
+  const ws = section("📌 我的追踪", "各平台比价 · 30 天走势", S.watch, "", 50, watchCard);
+  const wbox = ws.querySelector(".hscroll") || ws.querySelector(".empty");
+  wbox.className = "hscroll watch"; wbox.textContent = "";
+  S.watch.forEach((w) => wbox.append(watchCard(w))); wbox.append(addCard());
+  sec.append(ws);
+  if (!S.products.length) { sec.insertAdjacentHTML("beforeend", `<div class="empty">还没有好价数据。定时任务第一次运行后，这里会出现什么值得买上的最新好价。</div>`); return; }
   sec.append(
     section("🔥 今日捡漏", "评分 ≥ 70 且 24 小时内", live.filter((p) => p.score >= 70).sort(byScore), "暂时没有高分好价。同一商品被多次爆料、积累了几天价格历史后，评分才会可信。"),
     section("📉 突然降价", "72 小时内降价 ≥ 10%", live.filter((p) => p.tags.includes("sudden_drop")).sort(byScore), "需要同一商品在 3 天内出现多次爆料才能判断"),
@@ -407,6 +549,117 @@ function chart(p) {
     <text x="${W - R}" y="${Hh - 6}" text-anchor="end">现在</text></svg>`;
 }
 
+/* ---------------- 追踪商品详情 ---------------- */
+function openWatch(w) {
+  const back = document.createElement("div"); back.className = "sheet-back";
+  const sh = document.createElement("div"); sh.className = "sheet"; sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
+  const best = w.best, now = Date.now();
+  const days = Math.max(1, Math.ceil((now - w.since) / D));
+  const condText = (r) => [...(r.cond || []).map((c) => COND.find((x) => x[0] === c)[2]), r.suffix ? r.suffix.replace(/^[（(]|[)）]$/g, "") : ""].filter(Boolean).join(" · ");
+  const rows = w.cmp.map((r, i) => `<div class="cmp-row${i === 0 ? " best" : ""}">
+      <span class="key" style="background:${pcolor(r.plat)}"></span><span>${esc(r.plat)}</span>
+      <span class="p">${yuan(r.price)}</span><span class="gap">${i === 0 ? "最低" : "+" + yuan(r.price - best.price).slice(1)}</span>
+      <div class="src"><span>${r.src === "比价" ? "全网比价" : "好价爆料"} · ${ago(r.t)}${r.src === "比价" && r.mall !== r.plat ? " · " + esc(r.mall) : ""}${r.orig ? " · 标价 " + yuan(r.orig) : ""}</span>${condText(r) ? `<span>${esc(condText(r))}</span>` : ""}${r.url ? `<a class="linkbtn" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${r.src === "比价" ? "去购买" : "看爆料"} ↗</a>` : ""}</div>
+    </div>`).join("");
+  sh.innerHTML = `<div class="row"><span style="font-size:28px">📌</span><h3 style="flex:1">${esc(w.name)}</h3><button class="btn ghost sm" data-close>关闭</button></div>
+    <div class="row wrap"><span class="price big">${best ? money(best.price) : `<span class="muted" style="font-size:16px">${w.lastError ? "上次读取失败：" + esc(w.lastError.error) : "还没有价格"}</span>`}</span>${best ? `<span class="badge">全网最低 · ${esc(best.plat)}</span>` : ""}</div>
+    ${w.latest ? `<div class="note">比价读取于 ${fmtTime(w.curT)}（${ago(w.curT)}）${w.lastError ? ` · <span class="neg">最近一次读取失败：${esc(w.lastError.error)}</span>` : ""}</div>` : ""}
+    <div class="kv"><div><b>${yuan(w.lo30)}</b><span>30 天最低</span></div><div><b>${yuan(w.hi30)}</b><span>30 天最高</span></div><div><b>${days} 天</b><span>已追踪</span></div></div>
+    <div><b style="font-size:14px">平台对比</b> <span class="muted">比价价可能含国补、券或会员价，以商城为准</span></div>
+    ${rows ? `<div class="cmp">${rows}</div>` : `<div class="empty">${w.wiki ? "还没有读到比价，下一次更新后出现" : "这个商品没有百科比价页，只记录好价爆料；72 小时内没有爆料"}</div>`}
+    <div><b style="font-size:14px">30 天价格走势</b> <span class="muted">${w.samples.length} 次比价记录${w.deals.length ? ` · ${w.deals.length} 条爆料` : ""}</span></div>
+    <div data-chart></div>
+    ${w.offers.length ? `<details class="panel"><summary>全部报价（${w.offers.length} 条）</summary><div class="hist" style="padding:0">${w.offers.map((o) => `<div class="list-item"><div class="row"><span class="price">${money(o.p)}</span>${o.o ? `<span class="muted" style="text-decoration:line-through">${yuan(o.o)}</span>` : ""}<span class="muted" style="margin-left:auto">${esc(o.m)}</span></div>${o.u ? `<a class="linkbtn" href="${esc(o.u)}" target="_blank" rel="noopener noreferrer">去购买 ↗</a>` : ""}</div>`).join("")}</div></details>` : ""}
+    ${w.deals.length ? `<details class="panel"><summary>相关好价爆料（${w.deals.length} 条，最近 30 天）</summary><div class="hist" style="padding:0">${w.deals.map((x) => `<div class="list-item"><div class="row"><span class="price">${money(x.price)}</span><span class="muted" style="margin-left:auto">${fmtTime(x.t)} · ${esc(x.mall || "未注明")}</span></div><div class="note">${esc(x.title)}</div><a class="linkbtn" href="https://www.smzdm.com/p/${encodeURIComponent(x.id)}/" target="_blank" rel="noopener noreferrer">打开这条爆料 ↗</a></div>`).join("")}</div></details>` : ""}
+    <div class="ext">${w.wiki ? `<a href="https://wiki.smzdm.com/p/${encodeURIComponent(w.wiki)}/" target="_blank" rel="noopener noreferrer">百科比价页 ↗</a>` : ""}${searchLinks(w.name)}</div>
+    <div class="note">走势每 6 小时记录一次各平台的比价最低价，从 ${fmtDay(w.since)} 开始；菱形是好价爆料价。“30 天最低”只代表本雷达记录到的价格。</div>`;
+  sh.querySelector("[data-chart]").replaceWith(trendChart(w));
+  back.append(sh);
+  back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) back.remove(); });
+  document.body.append(back);
+}
+function trendChart(w) {
+  const box = document.createElement("div");
+  box.className = "chartbox";
+  const now = Date.now();
+  const from = now - 30 * D;
+  const samples = w.samples.filter((s) => s.t >= from);
+  const deals = w.deals.filter((d) => d.t >= from);
+  if (!samples.length && !deals.length) { box.innerHTML = `<div class="empty">还没有价格记录。${w.wiki ? "下一次更新（每 6 小时）后开始画线。" : ""}</div>`; return box; }
+  const plats = [...new Set(samples.flatMap((s) => Object.keys(s.lo)))].sort((a, b) => porder(a) - porder(b));
+  // 每个平台的价格是阶梯线：两次记录之间保持上一次的价格；超过 24 小时没读到这个平台才断开
+  const series = plats.map((pl) => ({ pl, pts: samples.filter((s) => s.lo[pl] != null).map((s) => ({ t: s.t, v: s.lo[pl] })) }));
+  const times = [...samples.map((s) => s.t), ...deals.map((d) => d.t)];
+  let t0 = Math.min(...times); const t1 = now;
+  if (t1 - t0 < D) t0 = t1 - D;
+  const vals = [...series.flatMap((s) => s.pts.map((p) => p.v)).filter((v) => v != null), ...deals.map((d) => d.price)];
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = (hi - lo) * 0.12 || hi * 0.03 || 1; lo -= pad; hi += pad;
+  const W = 340, Hh = 190, L = 40, R = 62, T = 10, B = 22;
+  const x = (t) => L + ((t - t0) / (t1 - t0)) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (Hh - T - B);
+  const ticks = [lo + pad, (lo + hi) / 2, hi - pad];
+  const grid = ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)"/><text x="${L - 4}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${Math.round(v)}</text>`).join("");
+  const lastSample = samples.length ? samples[samples.length - 1].t : 0;
+  const paths = series.map((s) => {
+    let d = "";
+    s.pts.forEach((p, i) => {
+      const next = s.pts[i + 1];
+      const gapBefore = i === 0 || p.t - s.pts[i - 1].t > D;
+      // 线延伸到下一次记录；最后一点：最近一次读取还有这个平台就延伸到“现在”，否则只到 6 小时后
+      const end = next ? (next.t - p.t > D ? p.t + 6 * H : next.t) : (p.t === lastSample ? t1 : Math.min(t1, p.t + 6 * H));
+      d += gapBefore ? `M${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}` : `V${y(p.v).toFixed(1)}`;
+      d += `H${x(end).toFixed(1)}`;
+    });
+    const dots = s.pts.length <= 20 ? s.pts.map((p) => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3.2" fill="${pcolor(s.pl)}" stroke="var(--surface)" stroke-width="1.5"/>`).join("") : "";
+    return `<path d="${d}" fill="none" stroke="${pcolor(s.pl)}" stroke-width="2" stroke-linejoin="round"/>${dots}`;
+  }).join("");
+  const dia = deals.map((d) => { const cx = x(d.t), cy = y(d.price); return `<path d="M${cx.toFixed(1)},${(cy - 5).toFixed(1)}l5,5l-5,5l-5,-5z" fill="${pcolor(d.plat)}" stroke="var(--surface)" stroke-width="2"/>`; }).join("");
+  // 线尾直接标注平台和当前价，标签互相错开
+  const ends = series.map((s) => { const last = [...s.pts].reverse().find((p) => p.v != null); return last ? { pl: s.pl, v: last.v, y: y(last.v) } : null; }).filter(Boolean).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+  const endLabels = ends.map((e) => `<text x="${W - R + 5}" y="${(e.y + 3.5).toFixed(1)}" style="fill:var(--ink-2);font-size:10.5px">${esc(e.pl)} ${Math.round(e.v)}</text>`).join("");
+  const span = (t1 - t0) / D;
+  const xl = [`<text x="${L}" y="${Hh - 6}">${fmtDay(t0)}</text>`, `<text x="${W - R}" y="${Hh - 6}" text-anchor="end">现在</text>`];
+  if (span >= 4) xl.push(`<text x="${x((t0 + t1) / 2)}" y="${Hh - 6}" text-anchor="middle">${fmtDay((t0 + t1) / 2)}</text>`);
+  box.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${Hh}" role="img" tabindex="0" aria-label="${esc(w.name)} 近 30 天各平台价格走势，用左右方向键查看每次记录">${grid}${paths}${dia}${endLabels}${xl.join("")}
+    <line data-x y1="${T}" y2="${Hh - B}" stroke="var(--ink-3)" stroke-width="1" visibility="hidden"/>
+    <rect data-hit x="${L}" y="0" width="${W - L - R}" height="${Hh}" fill="transparent"/></svg>
+    <div class="tip" hidden></div>
+    <div class="legend" style="margin-top:6px">${plats.map((pl) => `<span><i class="lkey" style="background:${pcolor(pl)}"></i>${esc(pl)}</span>`).join("")}${deals.length ? `<span><i class="dkey" style="background:var(--ink-3)"></i>好价爆料</span>` : ""}</div>`;
+  // 悬停 / 触摸 / 方向键：竖线吸附到最近一次记录，提示框列出当时每个平台的价格
+  const svg = box.querySelector("svg"), vline = svg.querySelector("[data-x]"), tip = box.querySelector(".tip");
+  const snaps = [...new Set(times)].sort((a, b) => a - b);
+  const valueAt = (s, t) => { let v = null, at = 0; for (const p of s.pts) { if (p.t <= t) { v = p.v; at = p.t; } else break; } return v != null && t - at <= D ? v : null; };
+  let cur = -1;
+  function show(i) {
+    cur = Math.max(0, Math.min(snaps.length - 1, i));
+    const t = snaps[cur], px = x(t);
+    vline.setAttribute("x1", px); vline.setAttribute("x2", px); vline.setAttribute("visibility", "visible");
+    tip.replaceChildren();
+    const head = document.createElement("div"); head.className = "tt"; head.textContent = fmtTime(t); tip.append(head);
+    const row = (key, val, label) => { const r = document.createElement("div"); r.className = "tr"; const k = document.createElement("i"); k.className = key[0]; k.style.background = key[1]; const b = document.createElement("b"); b.textContent = yuan(val); const l = document.createElement("span"); l.textContent = label; r.append(k, b, l); tip.append(r); };
+    series.map((s) => [s.pl, valueAt(s, t)]).filter(([, v]) => v != null).sort((a, b) => a[1] - b[1]).forEach(([pl, v]) => row(["lkey", pcolor(pl)], v, pl));
+    deals.filter((d) => d.t === t).forEach((d) => row(["dkey", pcolor(d.plat)], d.price, `${d.plat} 爆料`));
+    tip.hidden = false;
+    const bw = box.clientWidth, sx = (px / W) * bw, tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(bw - tw, sx > bw / 2 ? sx - tw - 10 : sx + 10)) + "px";
+  }
+  function hide() { tip.hidden = true; vline.setAttribute("visibility", "hidden"); }
+  function fromEvent(e) {
+    const r = svg.getBoundingClientRect(), vx = ((e.clientX - r.left) / r.width) * W;
+    let bi = 0; snaps.forEach((t, i) => { if (Math.abs(x(t) - vx) < Math.abs(x(snaps[bi]) - vx)) bi = i; });
+    show(bi);
+  }
+  svg.addEventListener("pointermove", fromEvent);
+  svg.addEventListener("pointerdown", fromEvent);
+  svg.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") hide(); });
+  svg.addEventListener("focus", () => show(snaps.length - 1));
+  svg.addEventListener("blur", hide);
+  svg.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") { show(cur - 1); e.preventDefault(); } else if (e.key === "ArrowRight") { show(cur + 1); e.preventDefault(); } else if (e.key === "Escape") hide(); });
+  return box;
+}
+
 /* ---------------- 提醒 ---------------- */
 /* ---------------- 数据库 ---------------- */
 async function loadSnapshot() {
@@ -415,6 +668,7 @@ async function loadSnapshot() {
     if (!r.ok) throw new Error("HTTP " + r.status);
     const j = await r.json();
     S.days = new Map([["all", { items: Array.isArray(j.items) ? j.items : [] }]]);
+    S.watch = Array.isArray(j.watch) ? j.watch.filter((w) => w && w.id && w.name) : [];
     S.status = j.status || null;
     S.loadError = null;
   } catch (e) {
