@@ -1,13 +1,9 @@
 {
-"lastRun": "2026-10-21T23:55:39+08:00",
+"lastRun": "2026-10-22T00:16:42+08:00",
 "ok": true,
 "fetched": 30,
 "added": 30,
 "alerts": 0,
 "error": null,
-"schedule": "每 6 小时自动更新",
-"watched": 0,
-"watchFailed": [
-"iPhone 17 256GB（wiki.smzdm.com 域名无法解析）"
-]
+"schedule": "每 6 小时自动更新"
 }
