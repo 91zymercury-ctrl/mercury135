@@ -1,13 +1,13 @@
 {
-"lastRun": "2026-10-21T17:57:19+08:00",
+"lastRun": "2026-10-21T18:09:37+08:00",
 "ok": false,
 "fetched": 0,
 "added": 0,
 "alerts": 0,
-"error": "脚本直连失败，WebFetch 权限请求无人响应，网页显示的是之前的数据",
+"error": "脚本直连失败，WebFetch 抓取权限请求未获及时批准，网页显示的是之前的数据",
 "schedule": "每 6 小时自动更新",
 "watched": 0,
 "watchFailed": [
-"iPhone 17 256GB（WebFetch 权限请求未获响应，未能读取百科页）"
+"iPhone 17 256GB（抓取权限请求未获及时批准，比价页未读取）"
 ]
 }
