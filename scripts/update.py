@@ -541,6 +541,19 @@ def watch_alerts(done: list[dict]) -> None:
             break
 
 
+SEARCH_URL = {"京东": "https://so.m.jd.com/ware/search.action?keyword=", "天猫": "https://list.tmall.com/search_product.htm?q=",
+              "淘宝": "https://s.taobao.com/search?q=", "拼多多": "https://mobile.yangkeduo.com/search_result.html?search_key="}
+
+
+def buy_link(mall: str, title: str) -> str:
+    """命中提醒用的商城搜索链接（订阅源里没有商品直链）。"""
+    from urllib.parse import quote
+    name = re.sub(r"\s+\d+(?:\.\d{1,2})?元\S{0,40}\s*$", "", title).strip()
+    name = re.sub(r"^[^：:\s]{1,16}[：:]\s*", "", name)[:50]
+    plat = next((k for k in SEARCH_URL if k in (mall or "")), "淘宝")
+    return SEARCH_URL[plat] + quote(name)
+
+
 def alerts(new_items: list[dict]) -> int:
     targets = load_targets()
     if not targets or not new_items:
@@ -555,7 +568,7 @@ def alerts(new_items: list[dict]) -> int:
                 continue
             if it["i"] in done:
                 continue
-            HITS.append({"kw": " ".join(words), "max": cap, "price": price, "title": it["t"], "link": f"https://www.smzdm.com/p/{it['i']}/"})
+            HITS.append({"kw": " ".join(words), "max": cap, "price": price, "title": it["t"], "link": buy_link(it.get("m", ""), it["t"])})
             try:
                 if os.environ.get("BARK_URL") or os.environ.get("SERVERCHAN_SENDKEY"):
                     push(f"🎯 {price:g}元 · {' '.join(words)}", it["t"], f"https://www.smzdm.com/p/{it['i']}/")

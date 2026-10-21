@@ -315,7 +315,14 @@ const LOWEST = "全网最低";
 const pcolor = (plat) => { if (plat === LOWEST) return "var(--ink-2)"; const r = PLATS.find((x) => x[1] === plat && x[2]); return `var(${r ? r[2] : "--s-other"})`; };
 const porder = (plat) => { const i = PLATS.findIndex((x) => x[1] === plat); return i < 0 ? 99 : i; };
 const fmtDay = (t) => new Date(t).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
-const searchLinks = (q) => [["什么值得买", "https://search.smzdm.com/?c=home&s="], ["京东", "https://so.m.jd.com/ware/search.action?keyword="], ["淘宝", "https://s.taobao.com/search?q="], ["拼多多", "https://mobile.yangkeduo.com/search_result.html?search_key="]]
+// 好价直接跳到商城：按爆料注明的商城打开该平台的搜索结果页（订阅源里没有商品直链）
+const SEARCH_URL = { "京东": "https://so.m.jd.com/ware/search.action?keyword=", "天猫": "https://list.tmall.com/search_product.htm?q=", "淘宝": "https://s.taobao.com/search?q=", "拼多多": "https://mobile.yangkeduo.com/search_result.html?search_key=", "苏宁": "https://search.suning.com/" };
+function buyQuery(title) { const pt = parseTitle(title); return norm(pt ? pt.name : title).replace(/^[^：:\s]{1,16}[：:]\s*/, "").replace(/\s+/g, " ").trim().slice(0, 50); }
+function buyLink(mall, title) {
+  const plat = platformOf(mall || ""); const known = SEARCH_URL[plat] ? plat : "淘宝"; const q = encodeURIComponent(buyQuery(title));
+  return { url: known === "苏宁" ? `${SEARCH_URL.苏宁}${q}/` : SEARCH_URL[known] + q, label: `去${known}${known === plat ? "" : "（商城未注明）"}搜索` };
+}
+const searchLinks = (q) => [["天猫", "https://list.tmall.com/search_product.htm?q="], ["京东", "https://so.m.jd.com/ware/search.action?keyword="], ["淘宝", "https://s.taobao.com/search?q="], ["拼多多", "https://mobile.yangkeduo.com/search_result.html?search_key="]]
   .map(([n, u]) => `<a href="${u}${encodeURIComponent(q)}" target="_blank" rel="noopener noreferrer">${n} ↗</a>`).join("");
 
 function deriveWatch(w, now) {
@@ -343,7 +350,7 @@ function deriveWatch(w, now) {
   for (const d of deals) {
     if (now - d.t > 3 * D) continue;
     const r = rows.get(d.plat);
-    if (!r || d.price < r.price) rows.set(d.plat, { plat: d.plat, price: d.price, src: "爆料", t: d.t, url: `https://www.smzdm.com/p/${encodeURIComponent(d.id)}/`, mall: d.mall, cond: d.cond, suffix: d.suffix });
+    if (!r || d.price < r.price) rows.set(d.plat, { plat: d.plat, price: d.price, src: "爆料", t: d.t, url: buyLink(d.mall, d.title).url, mall: d.mall, cond: d.cond, suffix: d.suffix });
   }
   const cmp = [...rows.values()].sort((a, b) => a.price - b.price);
   const lows = samples.map((s) => ({ t: s.t, v: Math.min(...Object.values(s.lo)) }));
@@ -491,7 +498,8 @@ function openCatalog(it) {
     <div class="row wrap"><span class="price big">${it.cur != null ? money(it.cur) : `<span class="muted" style="font-size:16px">今天的列表里没有报价</span>`}</span>${it.cur != null ? `<span class="badge">全网最低起价</span>` : ""}</div>
     <div class="note">${esc(it.cat)} · 什么值得买百科列表价${it.curT ? `，记录于 ${fmtDay(it.curT)}` : ""}。可能已含国补、券或会员价，以商城为准。</div>
     <div class="kv"><div><b>${yuan(it.lo30)}</b><span>30 天最低</span></div><div><b>${yuan(it.hi30)}</b><span>30 天最高</span></div><div><b>${it.samples.length} 天</b><span>有记录</span></div></div>
-    <a class="btn accent" style="text-align:center;text-decoration:none" href="https://wiki.smzdm.com/p/${encodeURIComponent(it.id)}/" target="_blank" rel="noopener noreferrer">看各平台报价（百科比价页）↗</a>
+    <div><b style="font-size:14px">去商城搜索</b></div>
+    <div class="ext">${searchLinks(it.name)}<a href="https://wiki.smzdm.com/p/${encodeURIComponent(it.id)}/" target="_blank" rel="noopener noreferrer">百科比价页 ↗</a></div>
     <div><b style="font-size:14px">30 天全网最低价</b> <span class="muted">每天记录一次</span></div>
     <div data-chart></div>
     <div class="panel"><div><b style="font-size:14px">想看分平台走势？</b><div class="muted">加入追踪后，每 6 小时分别记录京东、天猫等平台的价格。</div></div>
@@ -596,12 +604,12 @@ function openDetail(p) {
     <div class="note">${esc(main.mall || "商城未注明")} · 爆料于 ${fmtTime(main.t)}（${ago(main.t)}）${main.suffix ? " · 标题注明：" + esc(main.suffix) : ""}</div>
     ${fresh && p.best.cond.length ? `<div class="chips">${p.best.cond.map((c) => `<span class="chip cond">${esc(COND.find((x) => x[0] === c)[2])}</span>`).join("")}</div>` : ""}
     <div class="kv"><div><b>${yuan(p.low)}</b><span>已观测最低</span></div><div><b>${p.points.length}</b><span>爆料次数</span></div><div><b>${p.span < 1 ? "<1" : p.span.toFixed(0)} 天</b><span>记录跨度</span></div></div>
-    <a class="btn accent" style="text-align:center;text-decoration:none" href="https://www.smzdm.com/p/${encodeURIComponent(main.id)}/" target="_blank" rel="noopener noreferrer">查看爆料（内含商城购买链接）↗</a>
+    ${((b) => `<a class="btn accent" style="text-align:center;text-decoration:none" href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.label)} ↗</a>`)(buyLink(main.mall, main.title))}
     <div><b style="font-size:14px">好价评分${p.score != null ? `：${p.score}` : ""}</b> <span class="muted">可信度${{ low: "较低", medium: "中等" }[p.conf] || "较低"}</span></div>
     <ul class="reasons">${p.reasons.map((r) => `<li><span>${esc(r.text)}</span>${r.d ? `<span class="d ${r.d > 0 ? "pos" : "neg"}">${r.d > 0 ? "+" : ""}${r.d}</span>` : ""}</li>`).join("")}</ul>
     <div><b style="font-size:14px">价格记录</b> <span class="muted">${p.points.length} 条爆料，没有记录的时段不插值</span></div>
     ${chart(p)}
-    <div class="hist">${posts.map((x) => `<div class="list-item"><div class="row"><span class="price">${money(x.price)}</span><span class="muted" style="margin-left:auto">${fmtTime(x.t)} · ${esc(x.mall || "未注明")}</span></div><div class="note">${esc(x.desc)}</div><a class="linkbtn" href="https://www.smzdm.com/p/${encodeURIComponent(x.id)}/" target="_blank" rel="noopener noreferrer">打开这条爆料 ↗</a></div>`).join("")}</div>`;
+    <div class="hist">${posts.map((x) => `<div class="list-item"><div class="row"><span class="price">${money(x.price)}</span><span class="muted" style="margin-left:auto">${fmtTime(x.t)} · ${esc(x.mall || "未注明")}</span></div><div class="note">${esc(x.desc)}</div>${((b) => `<a class="linkbtn" href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.label)} ↗</a>`)(buyLink(x.mall, x.title))}</div>`).join("")}</div>`;
   back.append(sh);
   back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) back.remove(); });
   document.body.append(back);
@@ -636,7 +644,7 @@ function openWatch(w) {
   const rows = w.cmp.map((r, i) => `<div class="cmp-row${i === 0 ? " best" : ""}">
       <span class="key" style="background:${pcolor(r.plat)}"></span><span>${esc(r.plat)}</span>
       <span class="p">${yuan(r.price)}</span><span class="gap">${i === 0 ? "最低" : "+" + yuan(r.price - best.price).slice(1)}</span>
-      <div class="src"><span>${r.src === "比价" ? "全网比价" : "好价爆料"} · ${ago(r.t)}${r.src === "比价" && r.mall !== r.plat ? " · " + esc(r.mall) : ""}${r.orig ? " · 标价 " + yuan(r.orig) : ""}</span>${condText(r) ? `<span>${esc(condText(r))}</span>` : ""}${r.url ? `<a class="linkbtn" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${r.src === "比价" ? "去购买" : "看爆料"} ↗</a>` : ""}</div>
+      <div class="src"><span>${r.src === "比价" ? "全网比价" : "好价爆料"} · ${ago(r.t)}${r.src === "比价" && r.mall !== r.plat ? " · " + esc(r.mall) : ""}${r.orig ? " · 标价 " + yuan(r.orig) : ""}</span>${condText(r) ? `<span>${esc(condText(r))}</span>` : ""}${r.url ? `<a class="linkbtn" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${r.src === "比价" ? "去购买" : "去" + esc(r.plat) + "搜索"} ↗</a>` : ""}</div>
     </div>`).join("");
   sh.innerHTML = `<div class="row"><span style="font-size:28px">📌</span><h3 style="flex:1">${esc(w.name)}</h3><button class="btn ghost sm" data-close>关闭</button></div>
     <div class="row wrap"><span class="price big">${best ? money(best.price) : `<span class="muted" style="font-size:16px">${w.lastError ? "上次读取失败：" + esc(w.lastError.error) : "还没有价格"}</span>`}</span>${best ? `<span class="badge">全网最低 · ${esc(best.plat)}</span>` : ""}</div>
@@ -647,7 +655,7 @@ function openWatch(w) {
     <div><b style="font-size:14px">30 天价格走势</b> <span class="muted">${w.samples.length} 次比价记录${w.deals.length ? ` · ${w.deals.length} 条爆料` : ""}</span></div>
     <div data-chart></div>
     ${w.offers.length ? `<details class="panel"><summary>全部报价（${w.offers.length} 条）</summary><div class="hist" style="padding:0">${w.offers.map((o) => `<div class="list-item"><div class="row"><span class="price">${money(o.p)}</span>${o.o ? `<span class="muted" style="text-decoration:line-through">${yuan(o.o)}</span>` : ""}<span class="muted" style="margin-left:auto">${esc(o.m)}</span></div>${o.u ? `<a class="linkbtn" href="${esc(o.u)}" target="_blank" rel="noopener noreferrer">去购买 ↗</a>` : ""}</div>`).join("")}</div></details>` : ""}
-    ${w.deals.length ? `<details class="panel"><summary>相关好价爆料（${w.deals.length} 条，最近 30 天）</summary><div class="hist" style="padding:0">${w.deals.map((x) => `<div class="list-item"><div class="row"><span class="price">${money(x.price)}</span><span class="muted" style="margin-left:auto">${fmtTime(x.t)} · ${esc(x.mall || "未注明")}</span></div><div class="note">${esc(x.title)}</div><a class="linkbtn" href="https://www.smzdm.com/p/${encodeURIComponent(x.id)}/" target="_blank" rel="noopener noreferrer">打开这条爆料 ↗</a></div>`).join("")}</div></details>` : ""}
+    ${w.deals.length ? `<details class="panel"><summary>相关好价爆料（${w.deals.length} 条，最近 30 天）</summary><div class="hist" style="padding:0">${w.deals.map((x) => `<div class="list-item"><div class="row"><span class="price">${money(x.price)}</span><span class="muted" style="margin-left:auto">${fmtTime(x.t)} · ${esc(x.mall || "未注明")}</span></div><div class="note">${esc(x.title)}</div>${((b) => `<a class="linkbtn" href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.label)} ↗</a>`)(buyLink(x.mall, x.title))}</div>`).join("")}</div></details>` : ""}
     <div class="ext">${w.wiki ? `<a href="https://wiki.smzdm.com/p/${encodeURIComponent(w.wiki)}/" target="_blank" rel="noopener noreferrer">百科比价页 ↗</a>` : ""}${searchLinks(w.name)}</div>
     <div class="note">走势每 6 小时记录一次各平台的比价最低价，从 ${fmtDay(w.since)} 开始；菱形是好价爆料价。“30 天最低”只代表本雷达记录到的价格。</div>`;
   sh.querySelector("[data-chart]").replaceWith(trendChart(w));
