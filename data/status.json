@@ -1,9 +1,13 @@
 {
-"lastRun": "2026-10-21T18:17:16+08:00",
+"lastRun": "2026-10-21T18:24:04+08:00",
 "ok": true,
-"fetched": 25,
-"added": 25,
+"fetched": 30,
+"added": 30,
 "alerts": 0,
 "error": null,
-"schedule": "每 6 小时自动更新"
+"schedule": "每 6 小时自动更新",
+"watched": 0,
+"watchFailed": [
+"iPhone 17 256GB（抓取权限请求未获及时批准，比价页未读取）"
+]
 }
