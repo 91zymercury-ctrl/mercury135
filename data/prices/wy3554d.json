@@ -69,5 +69,8 @@
 }
 ]
 },
-"lastError": null
+"lastError": {
+"t": "2026-10-21T17:09:08+08:00",
+"error": "百科页读取未获授权（WebFetch 权限请求超时）"
+}
 }
