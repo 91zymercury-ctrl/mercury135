@@ -20,6 +20,7 @@ import hashlib
 import html
 import json
 import statistics
+from collections import Counter
 import unicodedata
 import os
 import re
@@ -356,13 +357,15 @@ def catalog_plan(limit: int) -> list[dict]:
 
 
 def parse_listing(doc) -> list[dict]:
-    """校验 Claude 从列表页读出的商品：{"items":[{"id","name","price"}]}。"""
+    """校验 Claude 从列表页读出的商品：{"items":[{"id","name","price"}]} 或紧凑格式 {"items":[[id, price, name]]}。"""
     if not isinstance(doc, dict):
         raise RuntimeError("列表格式不对")
     if doc.get("error"):
         raise RuntimeError(clean(str(doc["error"]))[:80])
     out = []
     for o in doc.get("items") or []:
+        if isinstance(o, list) and len(o) >= 3:
+            o = {"id": o[0], "price": o[1], "name": o[2]}
         if not isinstance(o, dict):
             continue
         pid, name = str(o.get("id", "")).strip(), clean(str(o.get("name", "")))[:120]
@@ -374,8 +377,8 @@ def parse_listing(doc) -> list[dict]:
         except ValueError:
             p = None
         out.append({"id": pid, "name": name, "price": p})
-    if len(out) < 5:
-        raise RuntimeError(f"只读到 {len(out)} 个商品")
+    if not out:
+        raise RuntimeError("没有读到商品")
     return out
 
 
@@ -426,6 +429,24 @@ def merge_catalog(folder: str) -> dict:
     return {"pages": len(ok), "failed": failed, "items": seen, "products": len(load_json(CAT_DIR / "products.json", {}))}
 
 
+CARRY_DAYS = 2  # 某天没读到这个商品所在的列表页时，沿用最近一次价格的最长天数
+
+
+def daily_series(daily: list[dict], pid: str) -> list:
+    """每天的价格；没读到的日子沿用最近一次（最多 CARRY_DAYS 天），再往后记 None。"""
+    out, last, gap = [], None, 0
+    for d in daily:
+        p = d.get(pid)
+        if p is not None:
+            last, gap = p, 0
+        else:
+            gap += 1
+            if gap > CARRY_DAYS:
+                last = None
+        out.append(p if p is not None else last)
+    return out
+
+
 def build_catalog() -> int:
     """site/catalog.json：最近 30 天出现过的商品；价格只记变化点 [第几天, 价格]，网页搜索时才下载。"""
     files = sorted((CAT_DIR / "prices").glob("*.json"))[-PUBLISH_DAYS:]
@@ -441,15 +462,180 @@ def build_catalog() -> int:
         if v.get("c") not in cats:
             cats.append(v.get("c"))
         h, last = [], "x"
-        for i, d in enumerate(daily):
-            p = d.get(pid)
+        for i, p in enumerate(daily_series(daily, pid)):
             if p != last:
                 h.append([i, p])
                 last = p
         items.append([pid, v["n"], cats.index(v.get("c")), h])
     state = load_json(CAT_DIR / "state.json", {})
     save_json(SITE_DIR / "catalog.json", {"updatedAt": state.get("lastRun"), "days": days, "cats": cats, "items": items}, compact=True)
+    build_models(days, daily, prod, cut)
     return len(items)
+
+
+# ---------------- 型号汇总：显卡按芯片、手机按机型 ----------------
+
+GPU_SPLIT_MEM = {"RTX 5060 Ti", "RTX 4060 Ti", "RX 9060 XT", "RTX 3060", "RTX 3050", "RX 6750 GRE", "Arc A770"}
+
+
+def gpu_chip(name: str) -> tuple[str, str] | None:
+    """从显卡名称里认出芯片型号，返回 (芯片, 系列)；认不出返回 None。"""
+    t = unicodedata.normalize("NFKC", name or "").upper()
+    t = re.sub(r"(?<=[A-Z])(?=\d{3,4})", " ", t)          # RTX5060 → RTX 5060
+    t = re.sub(r"(?<=\d)(?=TI\b|TI\s|SUPER)", " ", t)       # 5060TI → 5060 TI
+    m = re.search(r"RTX\s*PRO\s*(\d{4})", t)
+    if m:
+        return f"RTX PRO {m.group(1)}", "专业卡"
+    m = re.search(r"RTX\s*A\s*(\d{3,4})\b", t) or re.search(r"RTX\s*(\d{4})\s*ADA", t)
+    if m:
+        return (f"RTX A{m.group(1)}" if "ADA" not in m.group(0) else f"RTX {m.group(1)} Ada"), "专业卡"
+    if "QUADRO" in t:
+        return None
+    m = re.search(r"\b(RTX|GTX|GT)\s*(\d{3,4})\s*(TI\s*SUPER|TI|SUPER|S(?![A-Z])|D\s*V2|D(?![A-Z]))?", t)
+    if m:
+        num = m.group(2)
+        suf = re.sub(r"\s+", "", m.group(3) or "")
+        suf = {"TISUPER": " Ti Super", "TI": " Ti", "SUPER": " Super", "S": " Super", "DV2": " D v2", "D": " D"}.get(suf, "")
+        chip = f"{m.group(1)} {num}{suf}"
+        gen = num[0] if len(num) == 4 else ""
+        series = {"5": "RTX 50 系列", "4": "RTX 40 系列"}.get(gen, "更早型号") if m.group(1) == "RTX" else "更早型号"
+    else:
+        m = re.search(r"\bRX\s*(\d{3,4})\s*(XTX|XT|GRE)?(?![A-Z])", t)
+        if m:
+            chip = f"RX {m.group(1)}" + (f" {m.group(2)}" if m.group(2) else "")
+            series = {"9": "RX 9000 系列", "7": "RX 7000 系列"}.get(m.group(1)[0] if len(m.group(1)) == 4 else "", "更早型号")
+        else:
+            m = re.search(r"ARC\s*(PRO\s*)?([AB])\s*(\d{2,3})\b", t)
+            if m:
+                return (f"Arc Pro {m.group(2)}{m.group(3)}", "专业卡") if m.group(1) else (f"Arc {m.group(2)}{m.group(3)}", "Intel Arc")
+            m = re.search(r"MTT\s*S\s*(\d{2,4})", t)
+            if m:
+                return f"摩尔线程 MTT S{m.group(1)}", "国产显卡"
+            return None
+    if chip in GPU_SPLIT_MEM:
+        rest = t[m.end():] + " " + t[:m.start()]
+        mm = re.search(r"(?<!\d)(6|8|10|12|16)\s*G(?:B|D6|D7)?(?![A-Z0-9])", rest)
+        if mm:
+            chip += f" {mm.group(1)}G"
+    return chip, series
+
+
+PHONE_BRANDS = [("苹果", ("apple", "苹果", "iphone")), ("华为", ("huawei", "华为")), ("荣耀", ("honor", "荣耀")), ("REDMI", ("redmi", "红米")),
+                ("小米", ("xiaomi", "小米")), ("一加", ("oneplus", "一加")), ("iQOO", ("iqoo",)), ("vivo", ("vivo",)), ("OPPO", ("oppo",)),
+                ("真我", ("realme", "真我")), ("三星", ("samsung", "三星")), ("红魔", ("redmagic", "红魔")), ("努比亚", ("nubia", "努比亚")),
+                ("魅族", ("meizu", "魅族")), ("摩托罗拉", ("motorola", "摩托罗拉")), ("联想", ("lenovo", "联想")), ("中兴", ("zte", "中兴")),
+                ("索尼", ("sony", "索尼")), ("谷歌", ("google",)), ("诺基亚", ("nokia", "诺基亚"))]
+BRAND_WORDS = {a for _, als in PHONE_BRANDS for a in als if a != "iphone"} | {"moto", "mi"}
+PHONE_KEEP_CN = {"畅享", "畅玩", "至尊版", "至尊纪念版", "竞速版", "活力版", "非凡大师", "典藏版", "超能版", "超级版", "元气版", "轻享版",
+                 "标准版", "青春版", "冠军版", "探索版", "焕", "卫星版", "卫星通信版", "影像"}
+PHONE_STOP = re.compile(r"^(?:[2345][gk].*|\d+(?:gb|tb|g\+|mah|hz|w)\b.*|\d+gb\+.*|手机.*|智能手机|全网通.*|双卡.*|折叠.*|三折叠.*|第.代.*|骁龙.*|天玑.*|麒麟.*|ai|nfc)$", re.I)
+
+
+def phone_model(name: str) -> tuple[str, str, str] | None:
+    """从手机名称里认出 (品牌, 机型键, 显示名)；认不出返回 None。"""
+    t = unicodedata.normalize("NFKC", name or "")
+    t = re.sub(r"[()（）/\[\]【】,，]", " ", t)
+    t = re.sub(r"(?<=[一-鿿])(?=[A-Za-z0-9])|(?<=[A-Za-z0-9+])(?=[一-鿿])", " ", t)
+    t = re.sub(r"(?<=\d)(?=[A-Za-z]{3,})", " ", t)  # 17Ultra → 17 Ultra，Y600Pro → Y600 Pro
+    toks = t.split()
+    low = [x.lower() for x in toks]
+    brand = None
+    for b, als in PHONE_BRANDS:
+        if any(x in als or x.startswith("iqoo") and b == "iQOO" for x in low):
+            brand = b
+            break
+    if brand == "vivo" and any(x.startswith("iqoo") for x in low):
+        brand = "iQOO"
+    if brand in ("小米", "华为") and any(x in ("redmi", "红米") for x in low):
+        brand = "REDMI"
+    if brand == "努比亚" and any(x in ("红魔", "redmagic") for x in low):
+        brand = "红魔"
+    if not brand:
+        return None
+    out: list[str] = []
+    for x in toks:
+        xl = x.lower()
+        if xl in BRAND_WORDS or xl == "iqoo":
+            if out:
+                break
+            continue
+        if PHONE_STOP.match(xl):
+            break
+        if re.fullmatch(r"[a-z0-9+\-]+", xl):
+            if re.fullmatch(r"[a-z]{3}-[a-z]{2}\d{2}[a-z]?", xl) or re.fullmatch(r"a\d{4}", xl):
+                break  # 型号代码 EMA-AL00U、Apple A2634
+            if xl.isdigit() and (len(xl) >= 4 or any(any(c.isdigit() for c in o) for o in out)):
+                break  # 「5000万像素」「2亿像素」里的数字
+            out.append(x)
+            continue
+        if x in PHONE_KEEP_CN:
+            out.append(x)
+            continue
+        if x.endswith("系列") and len(x) > 2 and x[:-2] in PHONE_KEEP_CN:
+            out.append(x[:-2])
+        break
+    if not out or not any(any(c.isdigit() for c in o) or o.lower() in ("x", "duo", "power", "xt", "xts", "flip") for o in out):
+        return None
+    key_toks = [o.lower() for o in out if o.lower() != "galaxy"]
+    disp = " ".join(out)
+    if brand == "三星" and not disp.lower().startswith("galaxy"):
+        disp = "Galaxy " + disp
+    if brand != "苹果":
+        disp = f"{brand} {disp}"
+    return brand, brand + "|" + "".join(key_toks), disp
+
+
+GPU_SERIES_ORDER = ["RTX 50 系列", "RX 9000 系列", "Intel Arc", "RTX 40 系列", "RX 7000 系列", "国产显卡", "更早型号", "专业卡"]
+PHONE_BRAND_ORDER = [b for b, _ in PHONE_BRANDS]
+
+
+def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> None:
+    """site/models.json：显卡按芯片、手机按机型汇总，每个型号每天的全网最低价（所有规格里最便宜的）。"""
+    groups: dict[str, dict] = {}
+    for pid, v in prod.items():
+        if v.get("s", "") < cut:
+            continue
+        if v.get("c") == "显卡":
+            r = gpu_chip(v["n"])
+            if not r:
+                continue
+            key, disp, series = "显卡|" + r[0], r[0], r[1]
+        elif v.get("c") == "手机":
+            r = phone_model(v["n"])
+            if not r:
+                continue
+            series, key, disp = r[0], "手机|" + r[1], r[2]
+        else:
+            continue
+        g = groups.setdefault(key, {"cat": v["c"], "key": key, "series": series, "names": Counter(), "skus": []})
+        g["names"][disp] += 1
+        g["skus"].append((pid, v["n"], daily_series(daily, pid)))
+    out = []
+    for g in groups.values():
+        skus = g["skus"]
+        cur = [s[2][-1] for s in skus if s[2] and s[2][-1] is not None]
+        if len(cur) >= 3:  # 价格远离中位数的多半是配件、套装或标错，不参与最低价
+            med = statistics.median(cur)
+            skus = [s for s in skus if s[2][-1] is None or med * 0.4 <= s[2][-1] <= med * 3]
+        hist = []
+        for i in range(len(days)):
+            vals = [s[2][i] for s in skus if s[2][i] is not None]
+            hist.append(min(vals) if vals else None)
+        priced = sorted((s for s in skus if s[2] and s[2][-1] is not None), key=lambda s: s[2][-1])
+        if not priced:
+            continue
+        name = max(g["names"].items(), key=lambda kv: (kv[1], len(kv[0])))[0]
+        out.append({"cat": g["cat"], "key": g["key"], "name": name, "series": g["series"], "hist": hist,
+                    "skus": [[s[0], s[1], s[2][-1]] for s in priced]})
+    def order(m):
+        if m["cat"] == "显卡":
+            s = GPU_SERIES_ORDER.index(m["series"]) if m["series"] in GPU_SERIES_ORDER else 99
+        else:
+            s = PHONE_BRAND_ORDER.index(m["series"]) if m["series"] in PHONE_BRAND_ORDER else 99
+        return (m["cat"], s, -(m["skus"][0][2] or 0))
+    out.sort(key=order)
+    state = load_json(CAT_DIR / "state.json", {})
+    save_json(SITE_DIR / "models.json", {"updatedAt": state.get("lastRun"), "days": days, "models": out}, compact=True)
 
 
 def build_site(status: dict) -> int:

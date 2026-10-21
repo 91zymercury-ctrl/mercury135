@@ -36,10 +36,10 @@
    把返回的 JSON 数组原样存为 `/tmp/feed.json`（用 `json.loads` 校验），然后运行 `RADAR_TARGETS='<目标价>' python3 scripts/update.py --items-json /tmp/feed.json --watch-dir /tmp/watch`。WebFetch 也失败时：`python3 scripts/update.py --fail "<一句简短的中文原因>" --watch-dir /tmp/watch`。
    不要改动标题。记下最后一次脚本输出里的 ok、added、watched、watchFailed 和 hits。
 
-5. **商品目录**（每次读一批分类列表页，约一天轮完一遍；失败不影响其他步骤）：运行 `python3 scripts/update.py --catalog-plan 30`，输出是要读的列表页 `[{key, name, url}]`。对每一页用 WebFetch 打开 url，prompt 用：
-   > Output ONLY a JSON object, no commentary, no code fence. If this is a verification/captcha/error page output {"error": "<short reason>"}. Otherwise: {"items": [one object per product card in the page's main product list (cards linking to wiki.smzdm.com/p/), in page order: {"id": the code after /p/ in the product link, "name": the product name copied verbatim, "price": the number in the "xxx元起" price, or null if none shown}]}. Skip 好价 deal posts that link to www.smzdm.com. Include every product card; never invent entries.
+5. **商品目录**（显卡、手机各约 40 页，加上其他分类，约 200 页；每次读最久没更新的 60 页，大约一天轮完一遍；失败不影响其他步骤）：运行 `python3 scripts/update.py --catalog-plan 60`，输出是要读的列表页 `[{key, name, url}]`。对每一页用 WebFetch 打开 url（可以 10 个一批同时发出），prompt 用：
+   > I am building a price list. From the main product grid (product cards whose links go to wiki.smzdm.com/p/), extract every card that shows a starting price in 元起. Reply with JSON only in this shape: {"items":[["<code after /p/>", <price number>, "<product name exactly as shown>"], ...]}. Skip cards marked 暂无报价, the 最新商品 sidebar cards and 好价 deal posts. If the page is a verification/captcha/error page reply {"error":"<short reason>"}.
 
-   把返回的文字 `json.loads` 解析后存为 `/tmp/catalog/<key>.json`；失败时写 `{"error": "<一句简短的中文原因>"}`。全部读完后运行 `python3 scripts/update.py --catalog-dir /tmp/catalog`，记下输出里的 pages、failed、products。
+   把返回的文字 `json.loads` 解析后存为 `/tmp/catalog/<key>.json`（编号没加引号时先补上引号）；失败或拒绝时写 `{"error": "<一句简短的中文原因>"}`。全部读完后运行 `python3 scripts/update.py --catalog-dir /tmp/catalog`，记下输出里的 pages、failed、products。脚本会顺便生成显卡（按芯片）和手机（按机型）的型号行情。
 
 6. **提交**：`git add data site scripts`；有变化时 `git -c user.name="radar-bot" -c user.email="radar-bot@users.noreply.github.com" commit -m "数据更新 <北京时间 YYYY-MM-DD HH:MM>"`，然后 `git push origin HEAD:main`。直接推送到 main，不要新建分支，也不要开 PR。推送被拒时先 `git pull --rebase origin main` 再推送一次；rebase 时只有 `data/status.json` 冲突就保留自己这次的版本。
 

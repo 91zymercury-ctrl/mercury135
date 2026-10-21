@@ -1,5 +1,5 @@
 {
-"note": "商品目录要读取的什么值得买百科列表页。每页约 35 个热门商品，定时任务每次读取最久没更新的一批，大约每天轮一遍。",
+"note": "商品目录要读取的什么值得买百科列表页（只记有报价的商品）。显卡、手机各读前 40 页，其他分类每类 1–2 页。定时任务每次读取最久没更新的一批，大约每天轮一遍。",
 "pages": [
 {
 "key": "dianzijiaoyu",
@@ -580,6 +580,431 @@
 "key": "chongwuyongpin-p2",
 "name": "宠物",
 "url": "https://wiki.smzdm.com/chongwuyongpin/p2/"
+},
+{
+"key": "xianka-p2",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p2/"
+},
+{
+"key": "xianka-p3",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p3/"
+},
+{
+"key": "xianka-p4",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p4/"
+},
+{
+"key": "xianka-p5",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p5/"
+},
+{
+"key": "xianka-p6",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p6/"
+},
+{
+"key": "xianka-p7",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p7/"
+},
+{
+"key": "xianka-p8",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p8/"
+},
+{
+"key": "xianka-p9",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p9/"
+},
+{
+"key": "xianka-p10",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p10/"
+},
+{
+"key": "xianka-p11",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p11/"
+},
+{
+"key": "xianka-p12",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p12/"
+},
+{
+"key": "xianka-p13",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p13/"
+},
+{
+"key": "xianka-p14",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p14/"
+},
+{
+"key": "xianka-p15",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p15/"
+},
+{
+"key": "xianka-p16",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p16/"
+},
+{
+"key": "xianka-p17",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p17/"
+},
+{
+"key": "xianka-p18",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p18/"
+},
+{
+"key": "xianka-p19",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p19/"
+},
+{
+"key": "xianka-p20",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p20/"
+},
+{
+"key": "xianka-p21",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p21/"
+},
+{
+"key": "xianka-p22",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p22/"
+},
+{
+"key": "xianka-p23",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p23/"
+},
+{
+"key": "xianka-p24",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p24/"
+},
+{
+"key": "xianka-p25",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p25/"
+},
+{
+"key": "xianka-p26",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p26/"
+},
+{
+"key": "xianka-p27",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p27/"
+},
+{
+"key": "xianka-p28",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p28/"
+},
+{
+"key": "xianka-p29",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p29/"
+},
+{
+"key": "xianka-p30",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p30/"
+},
+{
+"key": "xianka-p31",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p31/"
+},
+{
+"key": "xianka-p32",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p32/"
+},
+{
+"key": "xianka-p33",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p33/"
+},
+{
+"key": "xianka-p34",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p34/"
+},
+{
+"key": "xianka-p35",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p35/"
+},
+{
+"key": "xianka-p36",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p36/"
+},
+{
+"key": "xianka-p37",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p37/"
+},
+{
+"key": "xianka-p38",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p38/"
+},
+{
+"key": "xianka-p39",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p39/"
+},
+{
+"key": "xianka-p40",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/p40/"
+},
+{
+"key": "zhinengshouji-p3",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p3/"
+},
+{
+"key": "zhinengshouji-p4",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p4/"
+},
+{
+"key": "zhinengshouji-p5",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p5/"
+},
+{
+"key": "zhinengshouji-p6",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p6/"
+},
+{
+"key": "zhinengshouji-p7",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p7/"
+},
+{
+"key": "zhinengshouji-p8",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p8/"
+},
+{
+"key": "zhinengshouji-p9",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p9/"
+},
+{
+"key": "zhinengshouji-p10",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p10/"
+},
+{
+"key": "zhinengshouji-p11",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p11/"
+},
+{
+"key": "zhinengshouji-p12",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p12/"
+},
+{
+"key": "zhinengshouji-p13",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p13/"
+},
+{
+"key": "zhinengshouji-p14",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p14/"
+},
+{
+"key": "zhinengshouji-p15",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p15/"
+},
+{
+"key": "zhinengshouji-p16",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p16/"
+},
+{
+"key": "zhinengshouji-p17",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p17/"
+},
+{
+"key": "zhinengshouji-p18",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p18/"
+},
+{
+"key": "zhinengshouji-p19",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p19/"
+},
+{
+"key": "zhinengshouji-p20",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p20/"
+},
+{
+"key": "zhinengshouji-p21",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p21/"
+},
+{
+"key": "zhinengshouji-p22",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p22/"
+},
+{
+"key": "zhinengshouji-p23",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p23/"
+},
+{
+"key": "zhinengshouji-p24",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p24/"
+},
+{
+"key": "zhinengshouji-p25",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p25/"
+},
+{
+"key": "zhinengshouji-p26",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p26/"
+},
+{
+"key": "zhinengshouji-p27",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p27/"
+},
+{
+"key": "zhinengshouji-p28",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p28/"
+},
+{
+"key": "zhinengshouji-p29",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p29/"
+},
+{
+"key": "zhinengshouji-p30",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p30/"
+},
+{
+"key": "zhinengshouji-p31",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p31/"
+},
+{
+"key": "zhinengshouji-p32",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p32/"
+},
+{
+"key": "zhinengshouji-p33",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p33/"
+},
+{
+"key": "zhinengshouji-p34",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p34/"
+},
+{
+"key": "zhinengshouji-p35",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p35/"
+},
+{
+"key": "zhinengshouji-p36",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p36/"
+},
+{
+"key": "zhinengshouji-p37",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p37/"
+},
+{
+"key": "zhinengshouji-p38",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p38/"
+},
+{
+"key": "zhinengshouji-p39",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p39/"
+},
+{
+"key": "zhinengshouji-p40",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p40/"
+},
+{
+"key": "xianka-b_1699",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/b_1699/"
+},
+{
+"key": "xianka-b_313178",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/b_313178/"
+},
+{
+"key": "xianka-b_4755",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/b_4755/"
+},
+{
+"key": "iphone",
+"name": "手机",
+"url": "https://wiki.smzdm.com/iphone/"
+},
+{
+"key": "iphone-p2",
+"name": "手机",
+"url": "https://wiki.smzdm.com/iphone/p2/"
+},
+{
+"key": "iphone-p3",
+"name": "手机",
+"url": "https://wiki.smzdm.com/iphone/p3/"
+},
+{
+"key": "qitazhinengji",
+"name": "手机",
+"url": "https://wiki.smzdm.com/qitazhinengji/"
+},
+{
+"key": "androidshouji",
+"name": "手机",
+"url": "https://wiki.smzdm.com/androidshouji/"
 }
 ]
 }

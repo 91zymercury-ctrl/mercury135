@@ -2,3 +2,4 @@ site/data.json
 __pycache__/
 .local/
 site/catalog.json
+site/models.json

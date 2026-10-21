@@ -144,6 +144,9 @@ details p { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
 .dkey { display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); flex: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; color: var(--ink-2); }
+.seg button.on { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: var(--shadow); }
 .clist { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 2px 12px; }
 .crow { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: start; padding: 10px 0; border: 0; border-top: 1px solid var(--line); background: none; width: 100%; text-align: left; }
 .crow:first-child { border-top: 0; }
@@ -167,7 +170,7 @@ details p { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
   <div class="status" id="status">正在连接数据……</div>
   <div class="stats">
     <div class="stat"><b id="sDeals">—</b><span>收录好价</span></div>
-    <div class="stat"><b id="sProd">—</b><span>追踪商品</span></div>
+    <div class="stat"><b id="sProd">—</b><span>追踪型号</span></div>
     <div class="stat"><b id="sDays">—</b><span>已观测天数</span></div>
   </div>
   <div class="search"><input type="search" id="q" placeholder="搜索任何商品，比如 iPhone 17" autocomplete="off" enterkeyhint="search"></div>
@@ -302,7 +305,8 @@ function scoreProduct(p, now) {
 }
 
 /* ---------------- 状态 ---------------- */
-const S = { days: new Map(), status: null, targets: [], alerts: [], products: [], deals: 0, cat: "", q: "", ready: false, db: null, canWrite: false, seenAlerts: Number(store("radar_seen_alerts") || 0), watch: [], items: [] };
+const S = { days: new Map(), status: null, targets: [], alerts: [], products: [], deals: 0, cat: "", q: "", ready: false, db: null, canWrite: false, seenAlerts: Number(store("radar_seen_alerts") || 0), watch: [], items: [],
+  models: [], mTab: store("radar_mtab") || "显卡", mSeries: "", mAll: false };
 
 /* ---------------- 追踪商品：平台、比价、走势 ---------------- */
 const REPO = "91zymercury-ctrl/mercury135";
@@ -456,7 +460,7 @@ function loadCatalog() {
   if (S.catalog || S.catLoading) return;
   S.catLoading = true;
   fetch("catalog.json?t=" + Math.floor(Date.now() / 600e3), { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then((j) => {
-    const days = (j.days || []).map((d) => Date.parse(d + "T12:00:00+08:00"));
+    const days = (j.days || []).map((d) => Math.min(Date.parse(d + "T12:00:00+08:00"), Date.now() - 60e3));
     const cats = j.cats || [];
     const watched = new Set(S.watch.map((w) => w.wiki).filter(Boolean));
     S.catalog = (j.items || []).map(([id, name, ci, hist]) => {
@@ -512,6 +516,97 @@ function openCatalog(it) {
   document.body.append(back);
 }
 
+/* ---------------- 型号行情：显卡按芯片、手机按机型 ---------------- */
+function deriveModels(j) {
+  const days = (j.days || []).map((d) => Math.min(Date.parse(d + "T12:00:00+08:00"), Date.now() - 60e3));
+  const watched = new Map(S.watch.filter((w) => w.wiki).map((w) => [w.wiki, w]));
+  return (j.models || []).map((m) => {
+    const samples = days.map((t, i) => (m.hist[i] != null ? { t, lo: { [LOWEST]: m.hist[i] } } : null)).filter(Boolean);
+    const vs = samples.map((s) => s.lo[LOWEST]);
+    const cur = m.skus[0] ? m.skus[0][2] : null;
+    const weekAgo = samples.filter((s) => s.t <= Date.now() - 6.5 * D).pop();
+    return { ...m, samples, cur, curName: m.skus[0] ? m.skus[0][1] : "", curId: m.skus[0] ? m.skus[0][0] : "",
+      lo30: vs.length ? Math.min(...vs) : null, hi30: vs.length ? Math.max(...vs) : null,
+      wk: weekAgo ? weekAgo.lo[LOWEST] : null, sq: squash(m.name + " " + m.series + " " + m.cat),
+      tracked: m.skus.map((s) => watched.get(s[0])).find(Boolean) || null };
+  });
+}
+function modelRow(m) {
+  const b = document.createElement("button"); b.className = "crow";
+  let pill = "";
+  if (m.wk != null && m.cur != null && Math.abs(m.cur - m.wk) >= 1) {
+    const pct = (m.cur - m.wk) / m.wk * 100;
+    pill = `<span class="pill ${pct < 0 ? "low" : ""}">7 天 ${pct < 0 ? "↓" : "↑"}${Math.abs(pct).toFixed(0)}%</span>`;
+  } else if (m.samples.length >= 3 && m.cur != null && m.cur <= m.lo30) pill = `<span class="pill low">30 天最低</span>`;
+  b.innerHTML = `<span class="n">${esc(m.name)}</span><span class="price">${money(m.cur)}<small style="font-size:11px;color:var(--ink-3)"> 起</small></span>
+    <span class="m"><span>${m.skus.length} 个规格</span>${pill}${m.tracked ? `<span class="badge">已追踪</span>` : ""}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">最低：${esc(m.curName.slice(0, 26))}</span></span>`;
+  b.addEventListener("click", () => openModel(m));
+  return b;
+}
+function modelList(title, sub, list, limit, moreBtn) {
+  const wrap = document.createElement("section");
+  wrap.innerHTML = `<div class="sec-head"><h2>${title}</h2><small>${sub}</small></div>`;
+  const box = document.createElement("div"); box.className = "clist";
+  list.slice(0, limit).forEach((m) => box.append(modelRow(m)));
+  if (list.length > limit) {
+    const more = document.createElement("div"); more.className = "more";
+    if (moreBtn) { const bt = document.createElement("button"); bt.className = "btn ghost sm"; bt.textContent = `展开全部 ${list.length} 个`; bt.addEventListener("click", moreBtn); more.append(bt); }
+    else more.textContent = `还有 ${list.length - limit} 个，输入更具体的型号可以缩小范围。`;
+    box.append(more);
+  }
+  wrap.append(box);
+  return wrap;
+}
+function marketSection() {
+  const wrap = document.createElement("section");
+  const tabs = ["显卡", "手机"].filter((c) => S.models.some((m) => m.cat === c));
+  if (!tabs.includes(S.mTab)) S.mTab = tabs[0];
+  const pool = S.models.filter((m) => m.cat === S.mTab);
+  const series = [...new Set(pool.map((m) => m.series))];
+  if (S.mSeries && !series.includes(S.mSeries)) S.mSeries = "";
+  const list = pool.filter((m) => !S.mSeries || m.series === S.mSeries);
+  const skuN = pool.reduce((a, m) => a + m.skus.length, 0);
+  wrap.innerHTML = `<div class="sec-head"><h2>📊 型号行情</h2><small>${S.mTab === "显卡" ? "显卡按芯片汇总" : "手机按机型汇总"} · ${pool.length} 个型号 · ${skuN} 个在售规格</small></div>`;
+  const seg = document.createElement("div"); seg.className = "seg";
+  tabs.forEach((c) => { const b = document.createElement("button"); b.className = S.mTab === c ? "on" : ""; b.textContent = `${c === "显卡" ? "🎮" : "📱"} ${c}`;
+    b.addEventListener("click", () => { S.mTab = c; S.mSeries = ""; S.mAll = false; store("radar_mtab", c); render(); }); seg.append(b); });
+  const chips = document.createElement("div"); chips.className = "chips"; chips.style.margin = "8px 0";
+  ["", ...series].forEach((s) => { const b = document.createElement("button"); b.className = "chip" + (S.mSeries === s ? " on" : ""); b.textContent = s || "全部";
+    b.addEventListener("click", () => { S.mSeries = s; S.mAll = false; render(); }); chips.append(b); });
+  wrap.append(seg, chips);
+  const inner = modelList("", "", list, S.mAll ? 999 : 15, () => { S.mAll = true; render(); });
+  inner.querySelector(".sec-head").remove();
+  wrap.append(inner);
+  const note = document.createElement("div"); note.className = "note"; note.style.marginTop = "6px";
+  note.textContent = "价格是什么值得买百科列表上的全网最低起价，可能含国补、券、会员价或二手，点进去能看到每个规格并跳到比价页核实。";
+  wrap.append(note);
+  return wrap;
+}
+function openModel(m) {
+  const back = document.createElement("div"); back.className = "sheet-back";
+  const sh = document.createElement("div"); sh.className = "sheet"; sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
+  const cheapest = m.skus[0];
+  const rows = m.skus.map((s, i) => `<div class="cmp-row${i === 0 ? " best" : ""}" style="grid-template-columns:1fr auto">
+      <span style="font-size:13px;line-height:1.35;overflow-wrap:anywhere">${esc(s[1])}</span><span class="p">${yuan(s[2])}</span>
+      <div class="src" style="grid-column:1/-1"><a class="linkbtn" href="https://wiki.smzdm.com/p/${encodeURIComponent(s[0])}/" target="_blank" rel="noopener noreferrer">各平台报价 ↗</a>${i === 0 ? "<span>当前最低</span>" : `<span>+${yuan(s[2] - cheapest[2]).slice(1)}</span>`}</div></div>`).join("");
+  sh.innerHTML = `<div class="row"><span style="font-size:28px">${m.cat === "显卡" ? "🎮" : "📱"}</span><h3 style="flex:1">${esc(m.name)}<div class="muted" style="font-weight:400">${esc(m.series)}</div></h3><button class="btn ghost sm" data-close>关闭</button></div>
+    <div class="row wrap"><span class="price big">${money(m.cur)}</span><span class="badge">全网最低起价</span></div>
+    <div class="note">最便宜的规格：${esc(m.curName)}</div>
+    <div class="kv"><div><b>${yuan(m.lo30)}</b><span>30 天最低</span></div><div><b>${yuan(m.hi30)}</b><span>30 天最高</span></div><div><b>${m.skus.length}</b><span>在售规格</span></div></div>
+    <div><b style="font-size:14px">30 天最低价走势</b> <span class="muted">每天取所有规格里最便宜的</span></div>
+    <div data-chart></div>
+    <div><b style="font-size:14px">所有规格</b> <span class="muted">按价格从低到高</span></div>
+    <div class="cmp">${rows}</div>
+    ${m.tracked ? `<button class="btn" data-track>查看分平台价格（已追踪）</button>` : `<div class="panel"><div><b style="font-size:14px">想看京东、天猫等分平台价格？</b><div class="muted">把最便宜的规格加入追踪，之后每 6 小时分别记录各平台价格。</div></div>
+      <a class="btn" style="text-align:center;text-decoration:none" href="${issueUrl(cheapest[1], cheapest[0])}" target="_blank" rel="noopener noreferrer">加入追踪 ↗</a></div>`}
+    <div class="ext">${searchLinks(m.name)}</div>`;
+  sh.querySelector("[data-chart]").replaceWith(trendChart({ name: m.name, samples: m.samples, deals: [], wiki: cheapest[0] }));
+  const tb = sh.querySelector("[data-track]"); if (tb) tb.addEventListener("click", () => { back.remove(); openWatch(m.tracked); });
+  back.append(sh);
+  back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) back.remove(); });
+  document.body.append(back);
+}
+
 function untracked(q) {
   const box = document.createElement("div");
   box.className = "panel";
@@ -536,7 +631,7 @@ function render() {
     ${st.watched != null ? `<span>${st.watchFailed && st.watchFailed.length ? `<span class="err">比价读取失败：${esc(st.watchFailed.join("、"))}</span>` : `比价 ${st.watched} 件已更新`}</span>` : ""}
     <span>${esc(st.schedule || "")}</span>`;
   $("#sDeals").textContent = S.ready ? S.deals : "—";
-  $("#sProd").textContent = S.ready ? S.watch.length : "—";
+  $("#sProd").textContent = S.ready ? S.watch.length + S.models.length : "—";
   $("#sDays").textContent = S.ready ? S.spanDays : "—";
   // 分类筛选
   const cats = ["", ...CATS.map((c) => c[0]), "其他"].filter((c) => !c || S.products.some((p) => p.cat === c));
@@ -560,6 +655,8 @@ function render() {
       s.querySelector(".hscroll").classList.add("watch");
       sec.append(s);
     }
+    const ms = S.models.filter((m) => qw.every((w) => m.sq.includes(w)));
+    if (ms.length) sec.append(modelList(`🧩 型号 ${ms.length} 个`, "同一型号所有规格里的最低价 · 30 天走势", ms, 30));
     if (!S.catalog) { sec.insertAdjacentHTML("beforeend", `<div class="empty">正在加载商品目录……</div>`); loadCatalog(); }
     else {
       const cl = S.catalog.filter((it) => qw.every((w) => it.sq.includes(w)))
@@ -578,6 +675,7 @@ function render() {
   wbox.className = "hscroll watch"; wbox.textContent = "";
   S.watch.forEach((w) => wbox.append(watchCard(w))); wbox.append(addCard());
   sec.append(ws);
+  if (S.models.length) sec.append(marketSection());
   if (!S.products.length) { sec.insertAdjacentHTML("beforeend", `<div class="empty">还没有好价数据。定时任务第一次运行后，这里会出现什么值得买上的最新好价。</div>`); return; }
   sec.append(
     section("🔥 今日捡漏", "评分 ≥ 70 且 24 小时内", live.filter((p) => p.score >= 70).sort(byScore), "暂时没有高分好价。同一商品被多次爆料、积累了几天价格历史后，评分才会可信。"),
@@ -759,6 +857,10 @@ async function loadSnapshot() {
   } catch (e) {
     S.loadError = "暂时读不到数据，请稍后刷新。";
   }
+  try {
+    const r = await fetch("models.json?t=" + Math.floor(Date.now() / 600e3), { cache: "no-store" });
+    if (r.ok) S.models = deriveModels(await r.json());
+  } catch (_) { /* 型号行情读不到时不影响其他内容 */ }
   S.ready = true;
   rebuild(); render();
   if (S.loadError) $("#status").textContent = S.loadError;
