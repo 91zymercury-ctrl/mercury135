@@ -1,0 +1,585 @@
+{
+"note": "商品目录要读取的什么值得买百科列表页。每页约 35 个热门商品，定时任务每次读取最久没更新的一批，大约每天轮一遍。",
+"pages": [
+{
+"key": "dianzijiaoyu",
+"name": "电子教育",
+"url": "https://wiki.smzdm.com/dianzijiaoyu/"
+},
+{
+"key": "shouji",
+"name": "手机通讯",
+"url": "https://wiki.smzdm.com/shouji/"
+},
+{
+"key": "sheyingshexiang",
+"name": "摄影摄像",
+"url": "https://wiki.smzdm.com/sheyingshexiang/"
+},
+{
+"key": "shumapeijian",
+"name": "数码配件",
+"url": "https://wiki.smzdm.com/shumapeijian/"
+},
+{
+"key": "shumapeijian-p2",
+"name": "数码配件",
+"url": "https://wiki.smzdm.com/shumapeijian/p2/"
+},
+{
+"key": "cunchushebei",
+"name": "存储设备",
+"url": "https://wiki.smzdm.com/cunchushebei/"
+},
+{
+"key": "cunchushebei-p2",
+"name": "存储设备",
+"url": "https://wiki.smzdm.com/cunchushebei/p2/"
+},
+{
+"key": "yingyinbofang",
+"name": "影音播放",
+"url": "https://wiki.smzdm.com/yingyinbofang/"
+},
+{
+"key": "yingyinbofang-p2",
+"name": "影音播放",
+"url": "https://wiki.smzdm.com/yingyinbofang/p2/"
+},
+{
+"key": "diannaozhengji",
+"name": "电脑整机",
+"url": "https://wiki.smzdm.com/diannaozhengji/"
+},
+{
+"key": "diannaozhengji-p2",
+"name": "电脑整机",
+"url": "https://wiki.smzdm.com/diannaozhengji/p2/"
+},
+{
+"key": "waishechanpin",
+"name": "电脑外设",
+"url": "https://wiki.smzdm.com/waishechanpin/"
+},
+{
+"key": "waishechanpin-p2",
+"name": "电脑外设",
+"url": "https://wiki.smzdm.com/waishechanpin/p2/"
+},
+{
+"key": "wangluoshebei",
+"name": "网络设备",
+"url": "https://wiki.smzdm.com/wangluoshebei/"
+},
+{
+"key": "diannaopeijian",
+"name": "电脑配件",
+"url": "https://wiki.smzdm.com/diannaopeijian/"
+},
+{
+"key": "chuandaishebei",
+"name": "智能设备",
+"url": "https://wiki.smzdm.com/chuandaishebei/"
+},
+{
+"key": "chuandaishebei-p2",
+"name": "智能设备",
+"url": "https://wiki.smzdm.com/chuandaishebei/p2/"
+},
+{
+"key": "diannaoshumabao",
+"name": "电脑数码包",
+"url": "https://wiki.smzdm.com/diannaoshumabao/"
+},
+{
+"key": "bangongyiqi",
+"name": "办公仪器",
+"url": "https://wiki.smzdm.com/bangongyiqi/"
+},
+{
+"key": "bangongyongpin",
+"name": "文具用品",
+"url": "https://wiki.smzdm.com/bangongyongpin/"
+},
+{
+"key": "dajiadian",
+"name": "大家电",
+"url": "https://wiki.smzdm.com/dajiadian/"
+},
+{
+"key": "dajiadian-p2",
+"name": "大家电",
+"url": "https://wiki.smzdm.com/dajiadian/p2/"
+},
+{
+"key": "chuweidadian",
+"name": "厨卫大电",
+"url": "https://wiki.smzdm.com/chuweidadian/"
+},
+{
+"key": "shenghuodianqi",
+"name": "生活电器",
+"url": "https://wiki.smzdm.com/shenghuodianqi/"
+},
+{
+"key": "shenghuodianqi-p2",
+"name": "生活电器",
+"url": "https://wiki.smzdm.com/shenghuodianqi/p2/"
+},
+{
+"key": "chufangdianqi",
+"name": "厨房小电",
+"url": "https://wiki.smzdm.com/chufangdianqi/"
+},
+{
+"key": "chufangdianqi-p2",
+"name": "厨房小电",
+"url": "https://wiki.smzdm.com/chufangdianqi/p2/"
+},
+{
+"key": "gehujiankang",
+"name": "个护健康",
+"url": "https://wiki.smzdm.com/gehujiankang/"
+},
+{
+"key": "gehujiankang-p2",
+"name": "个护健康",
+"url": "https://wiki.smzdm.com/gehujiankang/p2/"
+},
+{
+"key": "zhengchezhoubian",
+"name": "整车周边",
+"url": "https://wiki.smzdm.com/zhengchezhoubian/"
+},
+{
+"key": "chezaidianqi",
+"name": "车载电器",
+"url": "https://wiki.smzdm.com/chezaidianqi/"
+},
+{
+"key": "shiyongzhuangshi",
+"name": "汽车装饰",
+"url": "https://wiki.smzdm.com/shiyongzhuangshi/"
+},
+{
+"key": "cheyongmeirongqingjie",
+"name": "美容清洁",
+"url": "https://wiki.smzdm.com/cheyongmeirongqingjie/"
+},
+{
+"key": "anquanzijia",
+"name": "安全自驾",
+"url": "https://wiki.smzdm.com/anquanzijia/"
+},
+{
+"key": "jiazhuangzhucai",
+"name": "家装主材",
+"url": "https://wiki.smzdm.com/jiazhuangzhucai/"
+},
+{
+"key": "xianhuayuanyi",
+"name": "鲜花园艺",
+"url": "https://wiki.smzdm.com/xianhuayuanyi/"
+},
+{
+"key": "wujindiangong",
+"name": "五金电工",
+"url": "https://wiki.smzdm.com/wujindiangong/"
+},
+{
+"key": "zhuzhaijiaju",
+"name": "住宅家具",
+"url": "https://wiki.smzdm.com/zhuzhaijiaju/"
+},
+{
+"key": "dengjudengshi",
+"name": "灯具灯饰",
+"url": "https://wiki.smzdm.com/dengjudengshi/"
+},
+{
+"key": "jiafangbuyi",
+"name": "家纺布艺",
+"url": "https://wiki.smzdm.com/jiafangbuyi/"
+},
+{
+"key": "jiajushipin",
+"name": "家居饰品",
+"url": "https://wiki.smzdm.com/jiajushipin/"
+},
+{
+"key": "nanzhuang",
+"name": "男装",
+"url": "https://wiki.smzdm.com/nanzhuang/"
+},
+{
+"key": "nvzhuang",
+"name": "女装",
+"url": "https://wiki.smzdm.com/nvzhuang/"
+},
+{
+"key": "nanxie",
+"name": "男鞋",
+"url": "https://wiki.smzdm.com/nanxie/"
+},
+{
+"key": "nvxie",
+"name": "女鞋",
+"url": "https://wiki.smzdm.com/nvxie/"
+},
+{
+"key": "jingpinnanbao",
+"name": "男包",
+"url": "https://wiki.smzdm.com/jingpinnanbao/"
+},
+{
+"key": "jingpinnvbao",
+"name": "女包",
+"url": "https://wiki.smzdm.com/jingpinnvbao/"
+},
+{
+"key": "peishi",
+"name": "服装配饰",
+"url": "https://wiki.smzdm.com/peishi/"
+},
+{
+"key": "gongnengxiangbao",
+"name": "功能箱包",
+"url": "https://wiki.smzdm.com/gongnengxiangbao/"
+},
+{
+"key": "jiajuneiyi",
+"name": "家居内衣",
+"url": "https://wiki.smzdm.com/jiajuneiyi/"
+},
+{
+"key": "mianbuhuli",
+"name": "面部护理",
+"url": "https://wiki.smzdm.com/mianbuhuli/"
+},
+{
+"key": "caizhuangchanpin",
+"name": "彩妆产品",
+"url": "https://wiki.smzdm.com/caizhuangchanpin/"
+},
+{
+"key": "xiangshuichanpin",
+"name": "香水",
+"url": "https://wiki.smzdm.com/xiangshuichanpin/"
+},
+{
+"key": "shentihuli",
+"name": "身体护理",
+"url": "https://wiki.smzdm.com/shentihuli/"
+},
+{
+"key": "nvshihuli",
+"name": "女性护理",
+"url": "https://wiki.smzdm.com/nvshihuli/"
+},
+{
+"key": "nanshimianbu",
+"name": "男士面部护理",
+"url": "https://wiki.smzdm.com/nanshimianbu/"
+},
+{
+"key": "nanshihuli",
+"name": "男性护理",
+"url": "https://wiki.smzdm.com/nanshihuli/"
+},
+{
+"key": "xifahufa",
+"name": "洗发护发",
+"url": "https://wiki.smzdm.com/xifahufa/"
+},
+{
+"key": "meifahufa",
+"name": "美发护发",
+"url": "https://wiki.smzdm.com/meifahufa/"
+},
+{
+"key": "kouqianghuli",
+"name": "口腔护理",
+"url": "https://wiki.smzdm.com/kouqianghuli/"
+},
+{
+"key": "chufangyongju",
+"name": "厨房用具",
+"url": "https://wiki.smzdm.com/chufangyongju/"
+},
+{
+"key": "shenghuoyongpin",
+"name": "生活用品",
+"url": "https://wiki.smzdm.com/shenghuoyongpin/"
+},
+{
+"key": "jiajuqingjie",
+"name": "家居清洁",
+"url": "https://wiki.smzdm.com/jiajuqingjie/"
+},
+{
+"key": "zhongbiao",
+"name": "手表",
+"url": "https://wiki.smzdm.com/zhongbiao/"
+},
+{
+"key": "zhubaoshoushi",
+"name": "珠宝首饰",
+"url": "https://wiki.smzdm.com/zhubaoshoushi/"
+},
+{
+"key": "yanjing",
+"name": "眼镜",
+"url": "https://wiki.smzdm.com/yanjing/"
+},
+{
+"key": "huwaizhuangbei",
+"name": "户外装备",
+"url": "https://wiki.smzdm.com/huwaizhuangbei/"
+},
+{
+"key": "tiyuxiangmu",
+"name": "体育项目",
+"url": "https://wiki.smzdm.com/tiyuxiangmu/"
+},
+{
+"key": "yundongqicai",
+"name": "运动器材",
+"url": "https://wiki.smzdm.com/yundongqicai/"
+},
+{
+"key": "yundongqicai-p2",
+"name": "运动器材",
+"url": "https://wiki.smzdm.com/yundongqicai/p2/"
+},
+{
+"key": "yundongfushi",
+"name": "运动服饰",
+"url": "https://wiki.smzdm.com/yundongfushi/"
+},
+{
+"key": "huwaifushi",
+"name": "户外服饰",
+"url": "https://wiki.smzdm.com/huwaifushi/"
+},
+{
+"key": "yundongxiewa",
+"name": "运动鞋袜",
+"url": "https://wiki.smzdm.com/yundongxiewa/"
+},
+{
+"key": "huwaixiewa",
+"name": "户外鞋袜",
+"url": "https://wiki.smzdm.com/huwaixiewa/"
+},
+{
+"key": "naifen",
+"name": "奶粉",
+"url": "https://wiki.smzdm.com/naifen/"
+},
+{
+"key": "tongchetongchuang",
+"name": "童车童床",
+"url": "https://wiki.smzdm.com/tongchetongchuang/"
+},
+{
+"key": "yingyangfushi",
+"name": "营养辅食",
+"url": "https://wiki.smzdm.com/yingyangfushi/"
+},
+{
+"key": "yingerjiafang",
+"name": "婴儿家纺",
+"url": "https://wiki.smzdm.com/yingerjiafang/"
+},
+{
+"key": "niaokushijin",
+"name": "尿裤湿巾",
+"url": "https://wiki.smzdm.com/niaokushijin/"
+},
+{
+"key": "yingeranquanyongpin",
+"name": "婴儿安全用品",
+"url": "https://wiki.smzdm.com/yingeranquanyongpin/"
+},
+{
+"key": "weiyangyongpin",
+"name": "喂养用品",
+"url": "https://wiki.smzdm.com/weiyangyongpin/"
+},
+{
+"key": "tongzhuang",
+"name": "童装",
+"url": "https://wiki.smzdm.com/tongzhuang/"
+},
+{
+"key": "xihuyongpin",
+"name": "洗护用品",
+"url": "https://wiki.smzdm.com/xihuyongpin/"
+},
+{
+"key": "yingerfushi",
+"name": "婴儿服饰",
+"url": "https://wiki.smzdm.com/yingerfushi/"
+},
+{
+"key": "yingerwanju",
+"name": "婴儿玩具",
+"url": "https://wiki.smzdm.com/yingerwanju/"
+},
+{
+"key": "yunchanfuyongpin",
+"name": "孕产妇用品",
+"url": "https://wiki.smzdm.com/yunchanfuyongpin/"
+},
+{
+"key": "wanju",
+"name": "玩具",
+"url": "https://wiki.smzdm.com/wanju/"
+},
+{
+"key": "moxing",
+"name": "模型",
+"url": "https://wiki.smzdm.com/moxing/"
+},
+{
+"key": "yueqi",
+"name": "乐器",
+"url": "https://wiki.smzdm.com/yueqi/"
+},
+{
+"key": "dongmanzhoubian",
+"name": "动漫周边",
+"url": "https://wiki.smzdm.com/dongmanzhoubian/"
+},
+{
+"key": "jiulei",
+"name": "酒类",
+"url": "https://wiki.smzdm.com/jiulei/"
+},
+{
+"key": "shuiyinchongtiao",
+"name": "水饮冲调",
+"url": "https://wiki.smzdm.com/shuiyinchongtiao/"
+},
+{
+"key": "liangyoutiaowei",
+"name": "粮油调味",
+"url": "https://wiki.smzdm.com/liangyoutiaowei/"
+},
+{
+"key": "shengxianshipin",
+"name": "生鲜食品",
+"url": "https://wiki.smzdm.com/shengxianshipin/"
+},
+{
+"key": "xiuxianshipin",
+"name": "休闲食品",
+"url": "https://wiki.smzdm.com/xiuxianshipin/"
+},
+{
+"key": "baojianpin",
+"name": "健康营养品",
+"url": "https://wiki.smzdm.com/baojianpin/"
+},
+{
+"key": "zhinengshouji",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/"
+},
+{
+"key": "zhinengshouji-p2",
+"name": "手机",
+"url": "https://wiki.smzdm.com/zhinengshouji/p2/"
+},
+{
+"key": "bijibendiannao",
+"name": "笔记本电脑",
+"url": "https://wiki.smzdm.com/bijibendiannao/"
+},
+{
+"key": "bijibendiannao-p2",
+"name": "笔记本电脑",
+"url": "https://wiki.smzdm.com/bijibendiannao/p2/"
+},
+{
+"key": "pingbandiannao",
+"name": "平板电脑",
+"url": "https://wiki.smzdm.com/pingbandiannao/"
+},
+{
+"key": "erji",
+"name": "耳机",
+"url": "https://wiki.smzdm.com/erji/"
+},
+{
+"key": "erji-p2",
+"name": "耳机",
+"url": "https://wiki.smzdm.com/erji/p2/"
+},
+{
+"key": "yinxiang",
+"name": "音箱",
+"url": "https://wiki.smzdm.com/yinxiang/"
+},
+{
+"key": "xianka",
+"name": "显卡",
+"url": "https://wiki.smzdm.com/xianka/"
+},
+{
+"key": "xianshiqi",
+"name": "显示器",
+"url": "https://wiki.smzdm.com/xianshiqi/"
+},
+{
+"key": "jianpan",
+"name": "键盘",
+"url": "https://wiki.smzdm.com/jianpan/"
+},
+{
+"key": "shubiao",
+"name": "鼠标",
+"url": "https://wiki.smzdm.com/shubiao/"
+},
+{
+"key": "zhinengshoubiao",
+"name": "智能手表",
+"url": "https://wiki.smzdm.com/zhinengshoubiao/"
+},
+{
+"key": "saodijiqiren",
+"name": "扫地机器人",
+"url": "https://wiki.smzdm.com/saodijiqiren/"
+},
+{
+"key": "xichenqi",
+"name": "吸尘器",
+"url": "https://wiki.smzdm.com/xichenqi/"
+},
+{
+"key": "kafeiji",
+"name": "咖啡机",
+"url": "https://wiki.smzdm.com/kafeiji/"
+},
+{
+"key": "paobuji",
+"name": "跑步机",
+"url": "https://wiki.smzdm.com/paobuji/"
+},
+{
+"key": "yaling",
+"name": "哑铃",
+"url": "https://wiki.smzdm.com/yaling/"
+},
+{
+"key": "chongwuyongpin",
+"name": "宠物",
+"url": "https://wiki.smzdm.com/chongwuyongpin/"
+},
+{
+"key": "chongwuyongpin-p2",
+"name": "宠物",
+"url": "https://wiki.smzdm.com/chongwuyongpin/p2/"
+}
+]
+}

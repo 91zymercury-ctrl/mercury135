@@ -144,6 +144,14 @@ details p { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
 .dkey { display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); flex: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
+.clist { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 2px 12px; }
+.crow { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: start; padding: 10px 0; border: 0; border-top: 1px solid var(--line); background: none; width: 100%; text-align: left; }
+.crow:first-child { border-top: 0; }
+.crow .n { font-size: 13.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.crow .price { font-size: 16px; white-space: nowrap; }
+.crow .m { grid-column: 1 / -1; font-size: 11.5px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.crow .pill { font-size: 11px; }
+.more { font-size: 12.5px; color: var(--ink-3); padding: 10px 0; border-top: 1px solid var(--line); display: grid; gap: 6px; }
 .ext { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
 .ext a { text-decoration: none; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
 </style>
@@ -303,7 +311,8 @@ const squash = (s) => norm(s).toLowerCase().replace(/\s+/g, "");
 const PLATS = [["京东", "京东", "--s1"], ["天猫", "天猫", "--s2"], ["拼多多", "拼多多", "--s3"], ["淘宝", "淘宝", "--s4"], ["抖音", "抖音", "--s5"], ["苏宁", "苏宁", "--s6"],
   ["唯品会", "唯品会"], ["得物", "得物"], ["小米", "小米商城"], ["华为", "华为商城"], ["apple", "Apple 官网"], ["苹果官网", "Apple 官网"], ["亚马逊", "亚马逊"], ["快手", "快手"]];
 function platformOf(mall) { const m = norm(mall).trim(); for (const [k, n] of PLATS) if (m.toLowerCase().includes(k)) return n; return m.slice(0, 8) || "其他"; }
-const pcolor = (plat) => { const r = PLATS.find((x) => x[1] === plat && x[2]); return `var(${r ? r[2] : "--s-other"})`; };
+const LOWEST = "全网最低";
+const pcolor = (plat) => { if (plat === LOWEST) return "var(--ink-2)"; const r = PLATS.find((x) => x[1] === plat && x[2]); return `var(${r ? r[2] : "--s-other"})`; };
 const porder = (plat) => { const i = PLATS.findIndex((x) => x[1] === plat); return i < 0 ? 99 : i; };
 const fmtDay = (t) => new Date(t).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
 const searchLinks = (q) => [["什么值得买", "https://search.smzdm.com/?c=home&s="], ["京东", "https://so.m.jd.com/ware/search.action?keyword="], ["淘宝", "https://s.taobao.com/search?q="], ["拼多多", "https://mobile.yangkeduo.com/search_result.html?search_key="]]
@@ -432,14 +441,75 @@ function addCard() {
   b.addEventListener("click", () => { const q = $("#q"); q.focus(); q.scrollIntoView({ block: "center" }); toast("输入商品名，没追踪过的可以直接加入追踪"); });
   return b;
 }
+const issueUrl = (name, wiki) => `https://github.com/${REPO}/issues/new?title=${encodeURIComponent("追踪：" + name)}&body=${encodeURIComponent(
+  (wiki ? `百科页：https://wiki.smzdm.com/p/${wiki}/\n\n` : "") + "由捡漏雷达网页提交。Claude 会把这个商品加入追踪清单，每 6 小时记录一次各平台价格。\n\n可以在这里补充型号、容量、颜色等：\n\n")}`;
+
+/* ---------------- 商品目录：什么值得买百科各分类的热门商品，每天记录全网最低价 ---------------- */
+function loadCatalog() {
+  if (S.catalog || S.catLoading) return;
+  S.catLoading = true;
+  fetch("catalog.json?t=" + Math.floor(Date.now() / 600e3), { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then((j) => {
+    const days = (j.days || []).map((d) => Date.parse(d + "T12:00:00+08:00"));
+    const cats = j.cats || [];
+    const watched = new Set(S.watch.map((w) => w.wiki).filter(Boolean));
+    S.catalog = (j.items || []).map(([id, name, ci, hist]) => {
+      const vals = days.map(() => null);
+      (hist || []).forEach(([i, p], k) => { const end = k + 1 < hist.length ? hist[k + 1][0] : days.length; for (let d = i; d < end; d++) vals[d] = p; });
+      const samples = days.map((t, i) => (vals[i] != null ? { t, lo: { [LOWEST]: vals[i] } } : null)).filter(Boolean);
+      const ps = samples.map((s) => s.lo[LOWEST]);
+      const lastI = vals.length - 1;
+      return { id, name, cat: cats[ci] || "", sq: squash(name), samples, cur: vals[lastI] ?? null, curT: samples.length ? samples[samples.length - 1].t : 0,
+        lo30: ps.length ? Math.min(...ps) : null, hi30: ps.length ? Math.max(...ps) : null, watched: watched.has(id) };
+    });
+    S.catUpdated = j.updatedAt ? Date.parse(j.updatedAt) : 0;
+  }).catch(() => { S.catalog = []; S.catError = true; }).finally(() => { S.catLoading = false; render(); });
+}
+function catalogSection(list, q) {
+  const wrap = document.createElement("section");
+  const n = list.length, shown = list.slice(0, 60);
+  wrap.innerHTML = `<div class="sec-head"><h2>📚 商品目录 ${n} 件</h2><small>什么值得买百科 · 当前全网最低价</small></div>`;
+  const box = document.createElement("div"); box.className = "clist";
+  shown.forEach((it) => {
+    const b = document.createElement("button"); b.className = "crow";
+    let pill = "";
+    if (it.cur != null && it.samples.length >= 2) pill = it.cur <= it.lo30 ? `<span class="pill low">30 天最低</span>` : `<span class="pill">高于低点 ${((it.cur - it.lo30) / it.lo30 * 100).toFixed(0)}%</span>`;
+    b.innerHTML = `<span class="n">${esc(it.name)}</span><span class="price">${it.cur != null ? money(it.cur) + `<small style="font-size:11px;color:var(--ink-3)"> 起</small>` : `<span class="muted" style="font-size:12px">暂无报价</span>`}</span>
+      <span class="m"><span>${esc(it.cat)}</span>${pill}${it.watched ? `<span class="badge">已追踪</span>` : ""}${it.curT && Date.now() - it.curT > 2 * D ? `<span>${fmtDay(it.curT)} 的价格</span>` : ""}</span>`;
+    b.addEventListener("click", () => { const w = it.watched && S.watch.find((x) => x.wiki === it.id); if (w) openWatch(w); else openCatalog(it); });
+    box.append(b);
+  });
+  const more = document.createElement("div"); more.className = "more";
+  more.innerHTML = `${n > shown.length ? `<span>还有 ${n - shown.length} 件，输入更具体的型号可以缩小范围。</span>` : ""}<span>没有想要的型号？<a class="linkbtn" href="${issueUrl(q)}" target="_blank" rel="noopener noreferrer">加入追踪 ↗</a></span><div class="ext">${searchLinks(q)}</div>`;
+  box.append(more);
+  wrap.append(box);
+  return wrap;
+}
+function openCatalog(it) {
+  const back = document.createElement("div"); back.className = "sheet-back";
+  const sh = document.createElement("div"); sh.className = "sheet"; sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
+  sh.innerHTML = `<div class="row"><span style="font-size:28px">📚</span><h3 style="flex:1">${esc(it.name)}</h3><button class="btn ghost sm" data-close>关闭</button></div>
+    <div class="row wrap"><span class="price big">${it.cur != null ? money(it.cur) : `<span class="muted" style="font-size:16px">今天的列表里没有报价</span>`}</span>${it.cur != null ? `<span class="badge">全网最低起价</span>` : ""}</div>
+    <div class="note">${esc(it.cat)} · 什么值得买百科列表价${it.curT ? `，记录于 ${fmtDay(it.curT)}` : ""}。可能已含国补、券或会员价，以商城为准。</div>
+    <div class="kv"><div><b>${yuan(it.lo30)}</b><span>30 天最低</span></div><div><b>${yuan(it.hi30)}</b><span>30 天最高</span></div><div><b>${it.samples.length} 天</b><span>有记录</span></div></div>
+    <a class="btn accent" style="text-align:center;text-decoration:none" href="https://wiki.smzdm.com/p/${encodeURIComponent(it.id)}/" target="_blank" rel="noopener noreferrer">看各平台报价（百科比价页）↗</a>
+    <div><b style="font-size:14px">30 天全网最低价</b> <span class="muted">每天记录一次</span></div>
+    <div data-chart></div>
+    <div class="panel"><div><b style="font-size:14px">想看分平台走势？</b><div class="muted">加入追踪后，每 6 小时分别记录京东、天猫等平台的价格。</div></div>
+      <a class="btn" style="text-align:center;text-decoration:none" href="${issueUrl(it.name, it.id)}" target="_blank" rel="noopener noreferrer">加入追踪 ↗</a>
+      <div class="note">会打开 GitHub 提交页，用仓库主人的账号点 Submit；也可以在 Claude 里说“追踪 ${esc(it.name.slice(0, 30))}”。</div></div>
+    <div class="ext">${searchLinks(it.name.split(/\s+/).slice(0, 4).join(" "))}</div>`;
+  sh.querySelector("[data-chart]").replaceWith(trendChart({ name: it.name, samples: it.samples, deals: [], wiki: it.id }));
+  back.append(sh);
+  back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) back.remove(); });
+  document.body.append(back);
+}
+
 function untracked(q) {
   const box = document.createElement("div");
   box.className = "panel";
-  const title = `追踪：${q}`;
-  const body = `由捡漏雷达网页提交。Claude 会找到这个商品的什么值得买百科页，加入追踪清单，每 6 小时记录一次各平台价格。\n\n可以在这里补充型号、容量、颜色等：\n\n`;
   box.innerHTML = `<div><b>还没追踪「${esc(q)}」</b><div class="muted">加入后每 6 小时记录一次京东、天猫等平台的价格，30 天走势从加入那天开始积累。</div></div>
     <a class="btn accent" style="text-align:center;text-decoration:none" target="_blank" rel="noopener noreferrer"
-       href="https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}">加入追踪 ↗</a>
+       href="${issueUrl(q)}">加入追踪 ↗</a>
     <div class="note">会打开 GitHub 提交页，用仓库主人的账号点 Submit 即可，下一次更新（最多 6 小时）时加入。也可以直接在 Claude 里说“追踪 ${esc(q)}”。</div>
     <div class="ext"><span class="muted">现在去平台看：</span>${searchLinks(q)}</div>`;
   return box;
@@ -481,7 +551,14 @@ function render() {
       const s = section("📌 追踪中", "点开看各平台比价和 30 天走势", ws, "", 50, watchCard);
       s.querySelector(".hscroll").classList.add("watch");
       sec.append(s);
-    } else sec.append(untracked(q));
+    }
+    if (!S.catalog) { sec.insertAdjacentHTML("beforeend", `<div class="empty">正在加载商品目录……</div>`); loadCatalog(); }
+    else {
+      const cl = S.catalog.filter((it) => qw.every((w) => it.sq.includes(w)))
+        .sort((a, b) => (a.cur == null) - (b.cur == null) || a.name.length - b.name.length);
+      if (cl.length) sec.append(catalogSection(cl, q));
+      else if (!ws.length) sec.append(untracked(q));
+    }
   }
   if (qw.length || S.cat) {
     sec.append(section(`相关好价 ${pool.length} 件`, "全部品类 · 价格高低都显示 · 最新的在前", pool.slice().sort((a, b) => b.last - a.last), qw.length ? "最近 30 天的好价爆料里没有这个商品" : "没有符合条件的商品", 400));
@@ -618,7 +695,7 @@ function trendChart(w) {
   // 线尾直接标注平台和当前价，标签互相错开
   const ends = series.map((s) => { const last = [...s.pts].reverse().find((p) => p.v != null); return last ? { pl: s.pl, v: last.v, y: y(last.v) } : null; }).filter(Boolean).sort((a, b) => a.y - b.y);
   for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
-  const endLabels = ends.map((e) => `<text x="${W - R + 5}" y="${(e.y + 3.5).toFixed(1)}" style="fill:var(--ink-2);font-size:10.5px">${esc(e.pl)} ${Math.round(e.v)}</text>`).join("");
+  const endLabels = ends.map((e) => `<text x="${W - R + 5}" y="${(e.y + 3.5).toFixed(1)}" style="fill:var(--ink-2);font-size:10.5px">${series.length > 1 ? esc(e.pl) + " " : "¥"}${Math.round(e.v)}</text>`).join("");
   const span = (t1 - t0) / D;
   const xl = [`<text x="${L}" y="${Hh - 6}">${fmtDay(t0)}</text>`, `<text x="${W - R}" y="${Hh - 6}" text-anchor="end">现在</text>`];
   if (span >= 4) xl.push(`<text x="${x((t0 + t1) / 2)}" y="${Hh - 6}" text-anchor="middle">${fmtDay((t0 + t1) / 2)}</text>`);

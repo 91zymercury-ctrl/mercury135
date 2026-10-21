@@ -38,6 +38,8 @@ ROOT = Path(__file__).resolve().parent.parent
 DAYS_DIR = ROOT / "data" / "days"
 WATCH_FILE = ROOT / "data" / "watch.json"
 PRICES_DIR = ROOT / "data" / "prices"
+CAT_DIR = ROOT / "data" / "catalog"          # 商品目录：pages.json（要读的列表页）、state.json、products.json、prices/日期.json
+CAT_FRESH_HOURS = 20                         # 列表页多久没读就算该更新了
 WIKI_ID = re.compile(r"^[0-9a-z]{5,12}$")
 SITE_DIR = ROOT / "site"
 ALERTED = ROOT / ".local" / "alerted.json"   # 本机私有，不提交
@@ -342,7 +344,116 @@ def merge_watch(folder: str, seen_at: str) -> dict:
     return {"done": done, "failed": failed}
 
 
+# ---------------- 商品目录（什么值得买百科各分类的热门商品 + 每日全网最低价） ----------------
+
+def catalog_plan(limit: int) -> list[dict]:
+    pages = load_json(CAT_DIR / "pages.json", {}).get("pages", [])
+    fetched = load_json(CAT_DIR / "state.json", {}).get("fetched", {})
+    fresh = (now() - timedelta(hours=CAT_FRESH_HOURS)).isoformat()
+    due = [p for p in pages if fetched.get(p["key"], "") < fresh]
+    due.sort(key=lambda p: fetched.get(p["key"], ""))  # 从没读过的排最前，其次是最久没读的
+    return [{"key": p["key"], "name": p["name"], "url": p["url"]} for p in due[:limit]]
+
+
+def parse_listing(doc) -> list[dict]:
+    """校验 Claude 从列表页读出的商品：{"items":[{"id","name","price"}]}。"""
+    if not isinstance(doc, dict):
+        raise RuntimeError("列表格式不对")
+    if doc.get("error"):
+        raise RuntimeError(clean(str(doc["error"]))[:80])
+    out = []
+    for o in doc.get("items") or []:
+        if not isinstance(o, dict):
+            continue
+        pid, name = str(o.get("id", "")).strip(), clean(str(o.get("name", "")))[:120]
+        if not WIKI_ID.match(pid) or not name or (pid.isdigit() and len(pid) >= 8):
+            continue  # 纯数字长编号是页面底部的好价爆料，不是百科商品
+        try:
+            p = float(str(o.get("price") if o.get("price") is not None else "").replace(",", "").replace("¥", "").replace("元起", "").strip())
+            p = round(p, 2) if 0 < p < 10_000_000 else None
+        except ValueError:
+            p = None
+        out.append({"id": pid, "name": name, "price": p})
+    if len(out) < 5:
+        raise RuntimeError(f"只读到 {len(out)} 个商品")
+    return out
+
+
+def prune_catalog() -> None:
+    cut = (now() - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%d")
+    for f in (CAT_DIR / "prices").glob("*.json"):
+        if f.stem < cut:
+            f.unlink()
+    prod = load_json(CAT_DIR / "products.json", {})
+    keep = {k: v for k, v in prod.items() if v.get("s", "") >= cut}
+    if len(keep) != len(prod):
+        save_json(CAT_DIR / "products.json", keep, compact=True)
+
+
+def merge_catalog(folder: str) -> dict:
+    pages = {p["key"]: p for p in load_json(CAT_DIR / "pages.json", {}).get("pages", [])}
+    state = load_json(CAT_DIR / "state.json", {})
+    state.setdefault("fetched", {})
+    state.setdefault("errors", {})
+    prod = load_json(CAT_DIR / "products.json", {})
+    day = now().strftime("%Y-%m-%d")
+    pf = CAT_DIR / "prices" / f"{day}.json"
+    prices = load_json(pf, {})
+    ok, failed, seen = [], [], 0
+    for src in sorted(Path(folder).glob("*.json")):
+        key = src.stem
+        if key not in pages:
+            continue
+        try:
+            items = parse_listing(json.loads(src.read_text(encoding="utf-8")))
+        except Exception as e:  # noqa: BLE001 —— 单页失败不影响其他页
+            state["errors"][key] = {"t": now().isoformat(), "error": str(e)[:80]}
+            failed.append(f"{pages[key]['name']}（{str(e)[:30]}）")
+            continue
+        for it in items:
+            prod[it["id"]] = {"n": it["name"], "c": pages[key]["name"], "s": day}
+            if it["price"] is not None:
+                prices[it["id"]] = min(prices.get(it["id"], it["price"]), it["price"])
+            seen += 1
+        state["fetched"][key] = now().isoformat()
+        state["errors"].pop(key, None)
+        ok.append(key)
+    state["lastRun"] = now().isoformat()
+    save_json(CAT_DIR / "products.json", prod, compact=True)
+    save_json(pf, prices, compact=True)
+    save_json(CAT_DIR / "state.json", state)
+    prune_catalog()
+    return {"pages": len(ok), "failed": failed, "items": seen, "products": len(load_json(CAT_DIR / "products.json", {}))}
+
+
+def build_catalog() -> int:
+    """site/catalog.json：最近 30 天出现过的商品；价格只记变化点 [第几天, 价格]，网页搜索时才下载。"""
+    files = sorted((CAT_DIR / "prices").glob("*.json"))[-PUBLISH_DAYS:]
+    days = [f.stem for f in files]
+    daily = [load_json(f, {}) for f in files]
+    prod = load_json(CAT_DIR / "products.json", {})
+    cut = days[0] if days else now().strftime("%Y-%m-%d")
+    cats: list[str] = []
+    items = []
+    for pid, v in prod.items():
+        if v.get("s", "") < cut:
+            continue
+        if v.get("c") not in cats:
+            cats.append(v.get("c"))
+        h, last = [], "x"
+        for i, d in enumerate(daily):
+            p = d.get(pid)
+            if p != last:
+                h.append([i, p])
+                last = p
+        items.append([pid, v["n"], cats.index(v.get("c")), h])
+    state = load_json(CAT_DIR / "state.json", {})
+    save_json(SITE_DIR / "catalog.json", {"updatedAt": state.get("lastRun"), "days": days, "cats": cats, "items": items}, compact=True)
+    return len(items)
+
+
 def build_site(status: dict) -> int:
+    build_catalog()
     cutoff = (now() - timedelta(days=PUBLISH_DAYS)).strftime("%Y-%m-%d")
     items, seen = [], set()
     for f in sorted(DAYS_DIR.glob("*.json"), reverse=True):
@@ -472,6 +583,15 @@ def main() -> int:
         return 0
     if "--remove-watch" in args:
         print(json.dumps({"removed": remove_watch(arg("--remove-watch") or "")}, ensure_ascii=False))
+        return 0
+    if "--catalog-plan" in args:
+        n = arg("--catalog-plan")
+        print(json.dumps(catalog_plan(int(n) if n and n.isdigit() else 30), ensure_ascii=False))
+        return 0
+    if "--catalog-dir" in args:  # 商品目录单独运行：不动好价数据和 status.json
+        res = merge_catalog(arg("--catalog-dir") or "")
+        res["published"] = build_catalog()
+        print(json.dumps(res, ensure_ascii=False))
         return 0
     if "--issue-done" in args:
         w = load_watch()
