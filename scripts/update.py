@@ -585,6 +585,51 @@ def phone_model(name: str) -> tuple[str, str, str] | None:
     return brand, brand + "|" + "".join(key_toks), disp
 
 
+SUPP_BRANDS = [("ON", ("optimum", "奥普帝蒙", "on")), ("康比特", ("康比特", "cpt")), ("MYPROTEIN", ("myprotein",)), ("肌肉科技", ("muscletech", "肌肉科技")),
+               ("MUSCLEPHARM", ("musclepharm",)), ("汤臣倍健", ("汤臣倍健", "by-health")), ("诺特兰德", ("诺特兰德", "nutrend")),
+               ("BSN", ("bsn",)), ("Dymatize", ("dymatize", "狂神")), ("NutreX", ("nutrex",)), ("ISOPURE", ("isopure",)), ("USN", ("usn",)),
+               ("乐体", ("乐体",)), ("迈胜", ("迈胜", "maxler")), ("西王", ("西王",))]
+WEIGHT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(磅|lbs?|kg|千克|公斤|g|克)(?![a-z])", re.I)
+
+
+def supplement_group(name: str) -> tuple[str, str, str, str, float | None] | None:
+    """蛋白粉、肌酸：返回 (类别, 品牌, 分组键, 显示名, 重量kg)。口味不同的同款同规格算一组。"""
+    t = unicodedata.normalize("NFKC", name or "")
+    low = t.lower()
+    if "肌酸" in t and not re.search(r"乳清|蛋白|增肌|增重", t):
+        cat = "肌酸"
+    elif re.search(r"乳清|蛋白粉|蛋白质粉|whey", low) and not re.search(r"胶原|增肌|增重|氮泵|蛋白棒|蛋白饮|代餐|蛋白肽", t):
+        cat = "蛋白粉"
+    else:
+        return None
+    toks = set(re.findall(r"[a-z][a-z\-]+|[一-鿿]+", low))
+    brand = next((b for b, als in SUPP_BRANDS if any(a in toks or (len(a) > 2 and a in low) for a in als)), None)
+    if not brand:
+        return None
+    kg = None
+    m = WEIGHT_RE.search(t)
+    if m:
+        v, u = float(m.group(1)), m.group(2).lower()
+        kg = v * 0.4536 if u in ("磅", "lb", "lbs") else v if u in ("kg", "千克", "公斤") else v / 1000
+        mm = re.search(r"[*×x]\s*(\d+)\s*(?:罐|桶|袋|瓶|盒)", t[m.end():m.end() + 8])
+        if mm:
+            kg *= int(mm.group(1))
+        kg = round(kg, 3)
+    if cat == "蛋白粉":
+        series = next((s for k, s in (("金标", "金标"), ("黄金标准", "金标"), ("白金", "白金"), ("正氮", "正氮"), ("炽金", "炽金"),
+                                       ("impact", "Impact"), ("熊猫", "熊猫"), ("combat", "Combat")) if k in low), "")
+        kind = "水解乳清" if "水解" in t else "分离乳清" if "分离" in t else "乳清蛋白粉"
+        line = f"{series} {kind}".strip()
+    else:
+        series = next((s for k, s in (("炽金", "炽金"), ("绿标", "绿标"), ("白金", "白金")) if k in t), "")
+        kind = "锌镁肌酸" if "锌镁" in t else "盐酸肌酸" if "盐酸" in t else "一水肌酸" if "一水" in t else "肌酸"
+        line = f"{series} {kind}".strip()
+    size = (f"{kg:g}kg" if kg >= 1 else f"{kg * 1000:g}g") if kg else "规格未注明"
+    return cat, brand, f"{cat}|{brand}|{line}|{kg or '?'}", f"{brand} {line} {size}", kg
+
+
+UNIT_RANGE = {"蛋白粉": (60, 1500), "肌酸": (100, 3000)}  # 合理的每公斤价格范围（元）
+CAT_ORDER = ["显卡", "手机", "蛋白粉", "肌酸"]
 GPU_SERIES_ORDER = ["RTX 50 系列", "RX 9000 系列", "Intel Arc", "RTX 40 系列", "RX 7000 系列", "国产显卡", "更早型号", "专业卡"]
 PHONE_BRAND_ORDER = [b for b, _ in PHONE_BRANDS]
 
@@ -605,6 +650,19 @@ def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> No
             if not r:
                 continue
             series, key, disp = r[0], "手机|" + r[1], r[2]
+        elif v.get("c") == "运动营养":
+            r = supplement_group(v["n"])
+            if not r:
+                continue
+            cat, series, key, disp, kg = r
+            series_p = daily_series(daily, pid)
+            lo, hi = UNIT_RANGE[cat]
+            if kg and series_p[-1] is not None and not lo <= series_p[-1] / kg <= hi:
+                continue  # 每公斤价格离谱的多半是标错规格或试用装
+            g = groups.setdefault(key, {"cat": cat, "key": key, "series": series, "names": Counter(), "skus": [], "kg": kg})
+            g["names"][disp] += 1
+            g["skus"].append((pid, v["n"], series_p))
+            continue
         else:
             continue
         g = groups.setdefault(key, {"cat": v["c"], "key": key, "series": series, "names": Counter(), "skus": []})
@@ -625,14 +683,20 @@ def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> No
         if not priced:
             continue
         name = max(g["names"].items(), key=lambda kv: (kv[1], len(kv[0])))[0]
-        out.append({"cat": g["cat"], "key": g["key"], "name": name, "series": g["series"], "hist": hist,
-                    "skus": [[s[0], s[1], s[2][-1]] for s in priced]})
+        m = {"cat": g["cat"], "key": g["key"], "name": name, "series": g["series"], "hist": hist,
+             "skus": [[s[0], s[1], s[2][-1]] for s in priced]}
+        if g.get("kg"):
+            m["kg"] = g["kg"]
+            m["unit"] = round(priced[0][2][-1] / g["kg"], 1)  # 每公斤价格
+        out.append(m)
     def order(m):
+        if m["cat"] in UNIT_RANGE:
+            return (CAT_ORDER.index(m["cat"]), 0, m.get("unit") or 1e9)
         if m["cat"] == "显卡":
             s = GPU_SERIES_ORDER.index(m["series"]) if m["series"] in GPU_SERIES_ORDER else 99
         else:
             s = PHONE_BRAND_ORDER.index(m["series"]) if m["series"] in PHONE_BRAND_ORDER else 99
-        return (m["cat"], s, -(m["skus"][0][2] or 0))
+        return (CAT_ORDER.index(m["cat"]) if m["cat"] in CAT_ORDER else 9, s, -(m["skus"][0][2] or 0))
     out.sort(key=order)
     state = load_json(CAT_DIR / "state.json", {})
     save_json(SITE_DIR / "models.json", {"updatedAt": state.get("lastRun"), "days": days, "models": out}, compact=True)

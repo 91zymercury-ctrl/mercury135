@@ -60,7 +60,8 @@ input:focus, select:focus { border-color: var(--accent); }
 .chip.on { background: var(--ink); color: var(--bg); }
 .chip.cond { background: var(--warn-soft); color: var(--warn); cursor: default; font-size: 12px; }
 h2 { font-size: 17px; margin: 0; }
-.sec-head { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 6px; }
+.sec-head h2 { white-space: nowrap; }
 .sec-head small { color: var(--ink-3); font-size: 12px; }
 .hscroll { display: grid; grid-auto-flow: column; grid-auto-columns: 46%; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
 .hscroll::-webkit-scrollbar { display: none; }
@@ -516,7 +517,9 @@ function openCatalog(it) {
   document.body.append(back);
 }
 
-/* ---------------- 型号行情：显卡按芯片、手机按机型 ---------------- */
+/* ---------------- 型号行情：显卡按芯片、手机按机型、蛋白粉和肌酸按款式和规格 ---------------- */
+const MCAT = { "显卡": ["🎮", "显卡按芯片汇总"], "手机": ["📱", "手机按机型汇总"], "蛋白粉": ["💪", "按每公斤价格从低到高"], "肌酸": ["⚡", "按每公斤价格从低到高"] };
+const unitText = (u) => `¥${Math.round(u)}/kg`;
 function deriveModels(j) {
   const days = (j.days || []).map((d) => Math.min(Date.parse(d + "T12:00:00+08:00"), Date.now() - 60e3));
   const watched = new Map(S.watch.filter((w) => w.wiki).map((w) => [w.wiki, w]));
@@ -539,7 +542,7 @@ function modelRow(m) {
     pill = `<span class="pill ${pct < 0 ? "low" : ""}">7 天 ${pct < 0 ? "↓" : "↑"}${Math.abs(pct).toFixed(0)}%</span>`;
   } else if (m.samples.length >= 3 && m.cur != null && m.cur <= m.lo30) pill = `<span class="pill low">30 天最低</span>`;
   b.innerHTML = `<span class="n">${esc(m.name)}</span><span class="price">${money(m.cur)}<small style="font-size:11px;color:var(--ink-3)"> 起</small></span>
-    <span class="m"><span>${m.skus.length} 个规格</span>${pill}${m.tracked ? `<span class="badge">已追踪</span>` : ""}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">最低：${esc(m.curName.slice(0, 26))}</span></span>`;
+    <span class="m">${m.unit ? `<b style="color:var(--ink)">${unitText(m.unit)}</b>` : ""}<span>${m.skus.length} 个规格</span>${pill}${m.tracked ? `<span class="badge">已追踪</span>` : ""}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">最低：${esc(m.curName.slice(0, 26))}</span></span>`;
   b.addEventListener("click", () => openModel(m));
   return b;
 }
@@ -559,16 +562,16 @@ function modelList(title, sub, list, limit, moreBtn) {
 }
 function marketSection() {
   const wrap = document.createElement("section");
-  const tabs = ["显卡", "手机"].filter((c) => S.models.some((m) => m.cat === c));
+  const tabs = Object.keys(MCAT).filter((c) => S.models.some((m) => m.cat === c));
   if (!tabs.includes(S.mTab)) S.mTab = tabs[0];
   const pool = S.models.filter((m) => m.cat === S.mTab);
   const series = [...new Set(pool.map((m) => m.series))];
   if (S.mSeries && !series.includes(S.mSeries)) S.mSeries = "";
   const list = pool.filter((m) => !S.mSeries || m.series === S.mSeries);
   const skuN = pool.reduce((a, m) => a + m.skus.length, 0);
-  wrap.innerHTML = `<div class="sec-head"><h2>📊 型号行情</h2><small>${S.mTab === "显卡" ? "显卡按芯片汇总" : "手机按机型汇总"} · ${pool.length} 个型号 · ${skuN} 个在售规格</small></div>`;
+  wrap.innerHTML = `<div class="sec-head"><h2>📊 型号行情</h2><small>${MCAT[S.mTab][1]} · ${pool.length} 个型号 · ${skuN} 个在售规格</small></div>`;
   const seg = document.createElement("div"); seg.className = "seg";
-  tabs.forEach((c) => { const b = document.createElement("button"); b.className = S.mTab === c ? "on" : ""; b.textContent = `${c === "显卡" ? "🎮" : "📱"} ${c}`;
+  tabs.forEach((c) => { const b = document.createElement("button"); b.className = S.mTab === c ? "on" : ""; b.textContent = `${MCAT[c][0]} ${c}`;
     b.addEventListener("click", () => { S.mTab = c; S.mSeries = ""; S.mAll = false; store("radar_mtab", c); render(); }); seg.append(b); });
   const chips = document.createElement("div"); chips.className = "chips"; chips.style.margin = "8px 0";
   ["", ...series].forEach((s) => { const b = document.createElement("button"); b.className = "chip" + (S.mSeries === s ? " on" : ""); b.textContent = s || "全部";
@@ -578,7 +581,9 @@ function marketSection() {
   inner.querySelector(".sec-head").remove();
   wrap.append(inner);
   const note = document.createElement("div"); note.className = "note"; note.style.marginTop = "6px";
-  note.textContent = "价格是什么值得买百科列表上的全网最低起价，可能含国补、券、会员价或二手，点进去能看到每个规格并跳到比价页核实。";
+  note.textContent = MCAT[S.mTab] && (S.mTab === "蛋白粉" || S.mTab === "肌酸")
+    ? "同一款不同口味算一组，按名称里写的重量折算每公斤价格；没写重量的排在最后。蛋白粉不含增肌粉和胶原蛋白。价格是什么值得买百科上的全网最低起价，下单前点进比价页核实。"
+    : "价格是什么值得买百科列表上的全网最低起价，可能含国补、券、会员价或二手，点进去能看到每个规格并跳到比价页核实。";
   wrap.append(note);
   return wrap;
 }
@@ -588,11 +593,11 @@ function openModel(m) {
   const cheapest = m.skus[0];
   const rows = m.skus.map((s, i) => `<div class="cmp-row${i === 0 ? " best" : ""}" style="grid-template-columns:1fr auto">
       <span style="font-size:13px;line-height:1.35;overflow-wrap:anywhere">${esc(s[1])}</span><span class="p">${yuan(s[2])}</span>
-      <div class="src" style="grid-column:1/-1"><a class="linkbtn" href="https://wiki.smzdm.com/p/${encodeURIComponent(s[0])}/" target="_blank" rel="noopener noreferrer">各平台报价 ↗</a>${i === 0 ? "<span>当前最低</span>" : `<span>+${yuan(s[2] - cheapest[2]).slice(1)}</span>`}</div></div>`).join("");
-  sh.innerHTML = `<div class="row"><span style="font-size:28px">${m.cat === "显卡" ? "🎮" : "📱"}</span><h3 style="flex:1">${esc(m.name)}<div class="muted" style="font-weight:400">${esc(m.series)}</div></h3><button class="btn ghost sm" data-close>关闭</button></div>
+      <div class="src" style="grid-column:1/-1"><a class="linkbtn" href="https://wiki.smzdm.com/p/${encodeURIComponent(s[0])}/" target="_blank" rel="noopener noreferrer">各平台报价 ↗</a>${i === 0 ? "<span>当前最低</span>" : `<span>+${yuan(s[2] - cheapest[2]).slice(1)}</span>`}${m.kg ? `<span>${unitText(s[2] / m.kg)}</span>` : ""}</div></div>`).join("");
+  sh.innerHTML = `<div class="row"><span style="font-size:28px">${(MCAT[m.cat] || ["🧩"])[0]}</span><h3 style="flex:1">${esc(m.name)}<div class="muted" style="font-weight:400">${esc(m.series)}</div></h3><button class="btn ghost sm" data-close>关闭</button></div>
     <div class="row wrap"><span class="price big">${money(m.cur)}</span><span class="badge">全网最低起价</span></div>
     <div class="note">最便宜的规格：${esc(m.curName)}</div>
-    <div class="kv"><div><b>${yuan(m.lo30)}</b><span>30 天最低</span></div><div><b>${yuan(m.hi30)}</b><span>30 天最高</span></div><div><b>${m.skus.length}</b><span>在售规格</span></div></div>
+    <div class="kv"><div><b>${yuan(m.lo30)}</b><span>30 天最低</span></div><div><b>${yuan(m.hi30)}</b><span>30 天最高</span></div>${m.unit ? `<div><b>${unitText(m.unit)}</b><span>${m.cat === "肌酸" ? "折合每 5 克 " + yuan(m.unit / 200) : "按最低价折算"}</span></div>` : `<div><b>${m.skus.length}</b><span>在售规格</span></div>`}</div>
     <div><b style="font-size:14px">30 天最低价走势</b> <span class="muted">每天取所有规格里最便宜的</span></div>
     <div data-chart></div>
     <div><b style="font-size:14px">所有规格</b> <span class="muted">按价格从低到高</span></div>
