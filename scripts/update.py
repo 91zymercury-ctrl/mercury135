@@ -628,8 +628,87 @@ def supplement_group(name: str) -> tuple[str, str, str, str, float | None] | Non
     return cat, brand, f"{cat}|{brand}|{line}|{kg or '?'}", f"{brand} {line} {size}", kg
 
 
+LAPTOP_BRANDS = [("苹果", ("apple", "苹果", "macbook")), ("华为", ("huawei", "华为", "matebook")), ("荣耀", ("honor", "荣耀", "magicbook")),
+                 ("小米", ("xiaomi", "小米", "redmi", "红米")), ("来酷", ("来酷", "lecoo")),
+                 ("联想", ("lenovo", "联想", "legion", "拯救者", "小新", "thinkpad", "thinkbook", "yoga")),
+                 ("华硕", ("asus", "华硕", "rog", "玩家国度", "天选", "无畏", "灵耀", "adou", "枪神", "魔霸", "破晓")),
+                 ("戴尔", ("dell", "戴尔", "xps", "alienware", "外星人", "灵越", "游匣")),
+                 ("惠普", ("hp", "惠普", "暗影精灵", "光影精灵", "星book", "战66", "战99", "elitebook")), ("微星", ("msi", "微星")),
+                 ("宏碁", ("acer", "宏碁", "掠夺者", "暗影骑士")), ("机械革命", ("mechrevo", "机械革命")), ("雷神", ("thunderobot", "雷神")),
+                 ("神舟", ("hasee", "神舟")), ("七彩虹", ("colorful", "七彩虹")), ("机械师", ("机械师", "machenike")), ("火影", ("火影",)),
+                 ("微软", ("microsoft", "微软", "surface")), ("三星", ("samsung", "三星")), ("雷蛇", ("razer", "雷蛇"))]
+LAPTOP_DROP = {"apple", "苹果", "huawei", "华为", "honor", "荣耀", "xiaomi", "小米", "lenovo", "联想", "legion", "asus", "华硕", "玩家国度",
+               "dell", "戴尔", "hp", "惠普", "msi", "微星", "acer", "宏碁", "mechrevo", "机械革命", "thunderobot", "雷神", "hasee", "神舟",
+               "colorful", "七彩虹", "machenike", "microsoft", "微软", "samsung", "三星", "razer", "雷蛇", "lecoo", "来酷", "系列"}
+LAPTOP_SERIES = {"拯救者", "小新", "天选", "无畏", "灵耀", "枪神", "魔霸", "幻", "破晓", "暗影精灵", "光影精灵", "灵越", "游匣", "外星人",
+                 "掠夺者", "暗影骑士", "非凡", "无界", "极光", "蛟龙", "旷世", "翼龙", "耀世", "苍龙", "星影", "泰坦", "雷影", "冲锋坦克", "侠影",
+                 "战66", "战99", "战神", "非凡大师", "新锐", "星Book"}
+LAPTOP_MOD = {"pro", "air", "max", "plus", "se", "x", "s", "fold", "neo", "carbon", "duo", "art", "book", "flip"}
+LAPTOP_STOP = re.compile(r"^(?:\d+(?:\.\d+)?英寸.*|\d+(?:\.\d+)?寸|i[3579].*|ultra\d?|u\d.*|core.*|hx?|酷睿.*|锐龙.*|r[3579].*|rtx.*|gtx.*|"
+                         r"\d+gb.*|\d+g\+.*|\d+g|\d+tb|20[12]\d.*|gen|ai(?![a-z]).*|oled|\d+hz|[23]\.?\d?k.*|\d+k|ill\d+|iax\d+|[a-z]{2}\d{4}[a-z]{2})$", re.I)
+
+
+def laptop_model(name: str) -> tuple[str, str, str] | None:
+    """笔记本：返回 (品牌, 机型键, 显示名)。同系列同尺寸算一个机型，不同配置在里面分别列出。"""
+    t = unicodedata.normalize("NFKC", name or "")
+    t = re.sub(r"a\s*豆", " Adou ", t, flags=re.I)
+    t = re.sub(r"【[^】]*】|\[[^\]]*\]", " ", t)
+    t = re.sub(r"[()（）/,，、]", " ", t)
+    series_re = "|".join(re.escape(s) for s in sorted(LAPTOP_SERIES, key=len, reverse=True))
+    t = re.sub(f"({series_re})", r" \1 ", t, flags=re.I)  # 先把系列词隔开：拯救者Y7000P → 拯救者 Y7000P
+    t = re.sub(r"(?<=[一-鿿])(?=[A-Za-z0-9])|(?<=[A-Za-z0-9+])(?=[一-鿿])", " ", t)
+    t = re.sub(r"星\s+book", "星Book", t, flags=re.I)
+    t = re.sub(r"\b(Pro|Air|Max|PRO|AIR|MAX|Adou)(?=\d)", r"\1 ", t)
+    t = re.sub(r"(?<=\d)(?=(?:Pro|Air|Max|Plus|PRO|AIR|MAX)\b)", " ", t)
+    low = t.lower()
+    toks = t.split()
+    ltoks = [x.lower() for x in toks]
+    brand = next((b for b, als in LAPTOP_BRANDS if any(a in ltoks for a in als) or any(len(a) > 3 and a in low for a in als)), None)
+    if not brand:
+        return None
+    if brand == "苹果":
+        m = re.search(r"macbook\s*(air|pro|neo)?", low)
+        if not m:
+            return None
+        line = "MacBook" + (" " + m.group(1).title() if m.group(1) else "")
+        size = re.search(r"(1[3-6])(?:\.\d)?\s*英寸", t)
+        chip = re.search(r"\b(m[1-6])(?:\s*(pro|max))?\b|\b(a1\d\s*pro)\b", low)
+        parts = [line] + ([size.group(1)] if size else []) + ([(chip.group(1).upper() + (" " + chip.group(2).title() if chip.group(2) else "")) if chip.group(1) else "A18 Pro"] if chip else [])
+        disp = " ".join(parts)
+        return brand, "苹果|" + disp.lower().replace(" ", ""), disp
+    toks = re.sub(r"\d+(?:\.\d+)?\s*英寸", " ", t).split()  # 尺寸不算型号：MateBook Fold 18英寸
+    ltoks = [x.lower() for x in toks]
+    out: list[str] = []
+    for x, xl in zip(toks, ltoks):
+        if xl in LAPTOP_DROP:
+            continue
+        if LAPTOP_STOP.match(xl):
+            break
+        if x in LAPTOP_SERIES or xl == "星book" or re.fullmatch(r"[a-z0-9+\-]+", xl):
+            if xl.isdigit() and 13 <= int(xl) <= 18 and any(any(c.isdigit() for c in o) for o in out):
+                break  # 型号后面的尺寸：Y7000P 16
+            if out and out[-1].lower() == xl:
+                continue
+            out.append("a豆" if xl == "adou" else x)
+            if len(out) >= 4:
+                break
+            continue
+        if out:
+            break
+    out = [o for o in out if o.lower() not in ("笔记本", "游戏本")]
+    if not out or not (any(o in LAPTOP_SERIES or any(c.isdigit() for c in o) for o in out) or any(o.lower() in ("matebook", "magicbook", "thinkpad", "thinkbook", "xps") for o in out)):
+        return None
+    if all(o.lower() in LAPTOP_MOD for o in out):
+        return None
+    if brand == "联想" and re.fullmatch(r"[yr]\d{4}[a-z]*", out[0].lower()):
+        out.insert(0, "拯救者")
+    disp = f"{brand} " + " ".join(out)
+    return brand, brand + "|" + "".join(o.lower() for o in out), disp
+
+
 UNIT_RANGE = {"蛋白粉": (60, 1500), "肌酸": (100, 3000)}  # 合理的每公斤价格范围（元）
-CAT_ORDER = ["显卡", "手机", "蛋白粉", "肌酸"]
+CAT_ORDER = ["显卡", "手机", "笔记本", "蛋白粉", "肌酸"]
+LAPTOP_BRAND_ORDER = [b for b, _ in LAPTOP_BRANDS]
 GPU_SERIES_ORDER = ["RTX 50 系列", "RX 9000 系列", "Intel Arc", "RTX 40 系列", "RX 7000 系列", "国产显卡", "更早型号", "专业卡"]
 PHONE_BRAND_ORDER = [b for b, _ in PHONE_BRANDS]
 
@@ -650,6 +729,15 @@ def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> No
             if not r:
                 continue
             series, key, disp = r[0], "手机|" + r[1], r[2]
+        elif v.get("c") == "笔记本电脑":
+            r = laptop_model(v["n"])
+            if not r:
+                continue
+            series, key, disp = r[0], "笔记本|" + r[1], r[2]
+            g = groups.setdefault(key, {"cat": "笔记本", "key": key, "series": series, "names": Counter(), "skus": []})
+            g["names"][disp] += 1
+            g["skus"].append((pid, v["n"], daily_series(daily, pid)))
+            continue
         elif v.get("c") == "运动营养":
             r = supplement_group(v["n"])
             if not r:
@@ -694,6 +782,8 @@ def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> No
             return (CAT_ORDER.index(m["cat"]), 0, m.get("unit") or 1e9)
         if m["cat"] == "显卡":
             s = GPU_SERIES_ORDER.index(m["series"]) if m["series"] in GPU_SERIES_ORDER else 99
+        elif m["cat"] == "笔记本":
+            s = LAPTOP_BRAND_ORDER.index(m["series"]) if m["series"] in LAPTOP_BRAND_ORDER else 99
         else:
             s = PHONE_BRAND_ORDER.index(m["series"]) if m["series"] in PHONE_BRAND_ORDER else 99
         return (CAT_ORDER.index(m["cat"]) if m["cat"] in CAT_ORDER else 9, s, -(m["skus"][0][2] or 0))
