@@ -629,23 +629,30 @@ def supplement_group(name: str) -> tuple[str, str, str, str, float | None] | Non
 
 
 LAPTOP_BRANDS = [("苹果", ("apple", "苹果", "macbook")), ("华为", ("huawei", "华为", "matebook")), ("荣耀", ("honor", "荣耀", "magicbook")),
-                 ("小米", ("xiaomi", "小米", "redmi", "红米")), ("来酷", ("来酷", "lecoo")),
+                 ("小米", ("xiaomi", "小米", "redmi", "红米")), ("来酷", ("来酷", "lecoo", "斗战者")),
                  ("联想", ("lenovo", "联想", "legion", "拯救者", "小新", "thinkpad", "thinkbook", "yoga")),
                  ("华硕", ("asus", "华硕", "rog", "玩家国度", "天选", "无畏", "灵耀", "adou", "枪神", "魔霸", "破晓")),
                  ("戴尔", ("dell", "戴尔", "xps", "alienware", "外星人", "灵越", "游匣")),
                  ("惠普", ("hp", "惠普", "暗影精灵", "光影精灵", "星book", "战66", "战99", "elitebook")), ("微星", ("msi", "微星")),
                  ("宏碁", ("acer", "宏碁", "掠夺者", "暗影骑士")), ("机械革命", ("mechrevo", "机械革命")), ("雷神", ("thunderobot", "雷神")),
-                 ("神舟", ("hasee", "神舟")), ("七彩虹", ("colorful", "七彩虹")), ("机械师", ("机械师", "machenike")), ("火影", ("火影",)),
-                 ("微软", ("microsoft", "微软", "surface")), ("三星", ("samsung", "三星")), ("雷蛇", ("razer", "雷蛇"))]
-LAPTOP_DROP = {"apple", "苹果", "huawei", "华为", "honor", "荣耀", "xiaomi", "小米", "lenovo", "联想", "legion", "asus", "华硕", "玩家国度",
+                 ("神舟", ("hasee", "神舟")), ("七彩虹", ("colorful", "七彩虹", "colorfire")), ("机械师", ("机械师", "machenike")), ("火影", ("火影",)),
+                 ("微软", ("microsoft", "微软", "surface")), ("三星", ("samsung", "三星")), ("雷蛇", ("razer", "雷蛇")),
+                 ("玄派", ("玄派",)), ("GPD", ("gpd",)), ("摩尔线程", ("摩尔线程", "moore")), ("奥睿科", ("奥睿科", "orico"))]
+LAPTOP_DROP = {"apple", "苹果", "huawei", "华为", "honor", "荣耀", "xiaomi", "小米", "红米", "lenovo", "联想", "legion", "asus", "华硕", "玩家国度",
                "dell", "戴尔", "hp", "惠普", "msi", "微星", "acer", "宏碁", "mechrevo", "机械革命", "thunderobot", "雷神", "hasee", "神舟",
-               "colorful", "七彩虹", "machenike", "microsoft", "微软", "samsung", "三星", "razer", "雷蛇", "lecoo", "来酷", "系列"}
+               "colorful", "七彩虹", "colorfire", "machenike", "microsoft", "微软", "samsung", "三星", "razer", "雷蛇", "lecoo", "来酷", "系列",
+               "思考本", "adol", "alienware", "玄派", "moore", "threads", "摩尔线程", "orico", "奥睿科", "gpd"}
 LAPTOP_SERIES = {"拯救者", "小新", "天选", "无畏", "灵耀", "枪神", "魔霸", "幻", "破晓", "暗影精灵", "光影精灵", "灵越", "游匣", "外星人",
-                 "掠夺者", "暗影骑士", "非凡", "无界", "极光", "蛟龙", "旷世", "翼龙", "耀世", "苍龙", "星影", "泰坦", "雷影", "冲锋坦克", "侠影",
-                 "战66", "战99", "战神", "非凡大师", "新锐", "星Book"}
+                 "掠夺者", "暗影骑士", "暗影骑士龙", "非凡", "无界", "极光", "蛟龙", "旷世", "翼龙", "耀世", "苍龙", "星影", "泰坦", "雷影", "冲锋坦克",
+                 "侠影", "战神", "非凡大师", "新锐", "星Book", "斗战者", "尊爵", "绝影", "灵刃", "猎刃", "隐星", "将星", "小玄", "蜂鸟", "深海幽灵",
+                 "橘宝", "星舰"}
+LAPTOP_PREFIX = {"战", "锐", "星", "创"}  # 单字系列名，只在单独成词时算：战99、锐14、星14、ProArt创13
 LAPTOP_MOD = {"pro", "air", "max", "plus", "se", "x", "s", "fold", "neo", "carbon", "duo", "art", "book", "flip"}
-LAPTOP_STOP = re.compile(r"^(?:\d+(?:\.\d+)?英寸.*|\d+(?:\.\d+)?寸|i[3579].*|ultra\d?|u\d.*|core.*|hx?|酷睿.*|锐龙.*|r[3579].*|rtx.*|gtx.*|"
-                         r"\d+gb.*|\d+g\+.*|\d+g|\d+tb|20[12]\d.*|gen|ai(?![a-z]).*|oled|\d+hz|[23]\.?\d?k.*|\d+k|ill\d+|iax\d+|[a-z]{2}\d{4}[a-z]{2})$", re.I)
+LAPTOP_STOP = re.compile(r"^(?:\d+(?:\.\d+)?英寸.*|\d+(?:\.\d+)?寸|i[3579].*|ultra[\d\-].*|ultrax\d.*|u\d.*|core.*|hx?|酷睿.*|锐龙.*|r[3579].*|rtx.*|gtx.*|"
+                         r"\d+gb.*|\d+g\+.*|\d+g|\d+tb|20[12]\d.*|gen\d*|intel|amd|g\d\+?|ai(?![a-z]).*|oled|\d+hz|[23]\.?\d?k.*|\d+k|[a-z]{3}\d{1,2}|"
+                         r"[a-z]{2}\d{4}[a-z]{2})$", re.I)
+LAPTOP_JOIN = re.compile(r"^(?:[A-Za-z]{0,2}\d[\w+\-.]*|pro|air|max|plus|se|x|s|ultra|gt)$", re.I)
+MAC_SIZE_BY_RES = {"2560": "13", "2880": "15", "3024": "14", "3456": "16"}
 
 
 def laptop_model(name: str) -> tuple[str, str, str] | None:
@@ -653,12 +660,17 @@ def laptop_model(name: str) -> tuple[str, str, str] | None:
     t = unicodedata.normalize("NFKC", name or "")
     t = re.sub(r"a\s*豆", " Adou ", t, flags=re.I)
     t = re.sub(r"【[^】]*】|\[[^\]]*\]", " ", t)
-    t = re.sub(r"[()（）/,，、]", " ", t)
+    t = re.sub(r"暗影骑士\s*·\s*龙", "暗影骑士龙", t)
+    t = re.sub(r"ultimate\s*design", " 非凡大师 ", t, flags=re.I)
+    t = re.sub(r"第\s*(\d+)\s*版", r" \1 ", t)  # Surface Laptop 第7版
+    t = re.sub(r"\d+\s*代\S*", " ", t)  # 10代酷睿版、12代酷睿i5
+    t = re.sub(r"[()（）/,，、·]", " ", t)
+    t = re.sub(r"(笔记本电脑|笔记本|荣耀|华为|小米|红米|联想|华硕|戴尔|惠普|微星|宏碁|雷神|神舟|七彩虹|机械革命|机械师|雷蛇|来酷|玄派)", r" \1 ", t)
     series_re = "|".join(re.escape(s) for s in sorted(LAPTOP_SERIES, key=len, reverse=True))
     t = re.sub(f"({series_re})", r" \1 ", t, flags=re.I)  # 先把系列词隔开：拯救者Y7000P → 拯救者 Y7000P
     t = re.sub(r"(?<=[一-鿿])(?=[A-Za-z0-9])|(?<=[A-Za-z0-9+])(?=[一-鿿])", " ", t)
     t = re.sub(r"星\s+book", "星Book", t, flags=re.I)
-    t = re.sub(r"\b(Pro|Air|Max|PRO|AIR|MAX|Adou)(?=\d)", r"\1 ", t)
+    t = re.sub(r"\b(Pro|Air|Max|PRO|AIR|MAX|Adou|ThinkBook|ThinkPad|MateBook|MagicBook)(?=\d)", r"\1 ", t, flags=re.I)
     t = re.sub(r"(?<=\d)(?=(?:Pro|Air|Max|Plus|PRO|AIR|MAX)\b)", " ", t)
     low = t.lower()
     toks = t.split()
@@ -666,25 +678,32 @@ def laptop_model(name: str) -> tuple[str, str, str] | None:
     brand = next((b for b, als in LAPTOP_BRANDS if any(a in ltoks for a in als) or any(len(a) > 3 and a in low for a in als)), None)
     if not brand:
         return None
+    size = re.search(r"(\d+)(?:\.\d+)?\s*(?:英寸|吋)", t)
     if brand == "苹果":
         m = re.search(r"macbook\s*(air|pro|neo)?", low)
         if not m:
             return None
         line = "MacBook" + (" " + m.group(1).title() if m.group(1) else "")
-        size = re.search(r"(1[3-6])(?:\.\d)?\s*英寸", t)
-        chip = re.search(r"\b(m[1-6])(?:\s*(pro|max))?\b|\b(a1\d\s*pro)\b", low)
-        parts = [line] + ([size.group(1)] if size else []) + ([(chip.group(1).upper() + (" " + chip.group(2).title() if chip.group(2) else "")) if chip.group(1) else "A18 Pro"] if chip else [])
+        res = re.search(r"\b(2560|2880|3024|3456)\s*[*x×]\s*\d{4}", low)
+        inch = size.group(1) if size and 13 <= int(size.group(1)) <= 16 else (MAC_SIZE_BY_RES[res.group(1)] if res else None)
+        chips = list(re.finditer(r"\b(m[1-6])(?:\s*(pro|max))?\b|\b(a1\d\s*pro)\b", low))
+        chip = next((c for c in chips if c.group(2)), chips[0] if chips else None)
+        if m.group(1) == "neo" and not chip:  # MacBook Neo 只有 13 英寸 A18 Pro 一种
+            inch = inch or "13"
+            chip = re.search(r"\b(m[1-6])(?:\s*(pro|max))?\b|\b(a1\d\s*pro)\b", "a18 pro")
+        parts = [line] + ([inch] if inch else []) + ([(chip.group(1).upper() + (" " + chip.group(2).title() if chip.group(2) else "")) if chip.group(1) else "A18 Pro"] if chip else [])
         disp = " ".join(parts)
         return brand, "苹果|" + disp.lower().replace(" ", ""), disp
-    toks = re.sub(r"\d+(?:\.\d+)?\s*英寸", " ", t).split()  # 尺寸不算型号：MateBook Fold 18英寸
+    toks = re.sub(r"\d+(?:\.\d+)?\s*(?:英寸|吋)", " ", t).split()  # 尺寸不算型号：MateBook Fold 18英寸
     ltoks = [x.lower() for x in toks]
     out: list[str] = []
     for x, xl in zip(toks, ltoks):
         if xl in LAPTOP_DROP:
             continue
-        if LAPTOP_STOP.match(xl):
+        legion = brand == "联想" and re.fullmatch(r"[yr]\d{4}[a-z]*", xl)  # R9000P 不是锐龙型号
+        if LAPTOP_STOP.match(xl) and not legion:
             break
-        if x in LAPTOP_SERIES or xl == "星book" or re.fullmatch(r"[a-z0-9+\-]+", xl):
+        if x in LAPTOP_SERIES or x in LAPTOP_PREFIX or xl == "星book" or re.fullmatch(r"[a-z0-9+\-]+", xl):
             if xl.isdigit() and 13 <= int(xl) <= 18 and any(any(c.isdigit() for c in o) for o in out):
                 break  # 型号后面的尺寸：Y7000P 16
             if out and out[-1].lower() == xl:
@@ -696,14 +715,79 @@ def laptop_model(name: str) -> tuple[str, str, str] | None:
         if out:
             break
     out = [o for o in out if o.lower() not in ("笔记本", "游戏本")]
+    if any(o.lower() == "thinkbook" for o in out):
+        out = [o for o in out if o.lower() != "thinkpad"]  # ThinkPad 思考本 ThinkBook 14+ → ThinkBook 14+
+    if out and size and not any(any(c.isdigit() for c in o) for o in out) and len(out) < 4:
+        out.append(size.group(1))  # 名称里没有型号数字时补上尺寸：小新Pro + 16
     if not out or not (any(o in LAPTOP_SERIES or any(c.isdigit() for c in o) for o in out) or any(o.lower() in ("matebook", "magicbook", "thinkpad", "thinkbook", "xps") for o in out)):
         return None
     if all(o.lower() in LAPTOP_MOD for o in out):
         return None
     if brand == "联想" and re.fullmatch(r"[yr]\d{4}[a-z]*", out[0].lower()):
         out.insert(0, "拯救者")
-    disp = f"{brand} " + " ".join(out)
+    name_out = ""
+    for o in out:  # 中文系列名和后面的型号连写：天选6、战99、拯救者Y7000P
+        if name_out and re.search(r"[一-鿿]$", name_out) and LAPTOP_JOIN.match(o):
+            name_out += o
+        else:
+            name_out += (" " if name_out else "") + o
+    disp = f"{brand} {name_out}"
     return brand, brand + "|" + "".join(o.lower() for o in out), disp
+
+
+def laptop_spec(name: str) -> str:
+    """笔记本规格摘要：2024款 · i7-13650HX · RTX 4060 · 16G+1T，用来在型号列表里说明最便宜的是哪一款。"""
+    t = unicodedata.normalize("NFKC", name or "")
+    low = t.lower()
+    parts = []
+    y = re.search(r"(?<!\d)(20[12]\d)(?!\d)", t)
+    if y:
+        parts.append(y.group(1) + "款")
+    cpu = None
+    pats = [
+        (r"\b(m[1-6])(?:\s*(pro|max))?(?![a-z0-9])", lambda m: m.group(1).upper() + (" " + m.group(2).title() if m.group(2) else "")),
+        (r"\b(a1\d)\s*pro", lambda m: m.group(1).upper() + " Pro"),
+        (r"ultra\s*(x?)\s*(\d)\s*[-\s]?\s*(\d{3})\s*(hx|h|v|u)?(?![a-z])", lambda m: f"Ultra {m.group(1).upper()}{m.group(2)} {m.group(3)}{(m.group(4) or '').upper()}"),
+        (r"ai\s*(max\s*\+?)\s*(?:pro\s*)?(\d{3})", lambda m: f"AI Max+ {m.group(2)}"),
+        (r"ai\s*(\d)\s*(hx|h)?\s*(\d{3})", lambda m: f"AI {m.group(1)} {(m.group(2) or '').upper()} {m.group(3)}".replace("  ", " ")),
+        (r"(?<![a-z0-9])i([3579])\s*[-\s]?\s*(\d{4,5}[a-z]{0,2})(?![a-z])", lambda m: f"i{m.group(1)}-{m.group(2).upper()}"),
+        (r"(?:酷睿|core)\s*([3579])\s*[-\s]?\s*(\d{3}[a-z]{0,2})(?![a-z0-9])", lambda m: f"Core {m.group(1)} {m.group(2).upper()}"),
+        (r"(?:锐龙\s*)?r([3579])\s*(?:pro)?\s*[-\s]?\s*(\d{4}[a-z]{0,2}(?:3d)?)(?![a-z])", lambda m: f"R{m.group(1)}-{m.group(2).upper()}"),
+        (r"(?:锐龙\s*r?|(?<![a-z0-9])r)([579])\s*[-\s]?\s*h\s*[-\s]?\s*(\d{3})", lambda m: f"R{m.group(1)} H{m.group(2)}"),
+        (r"(?:锐龙\s*r?|(?<![a-z0-9])r)([579])\s*[-\s]?\s*(\d{3})\s*h", lambda m: f"R{m.group(1)} H{m.group(2)}"),
+        (r"(?<![a-z0-9])u([579])\s*[-\s]?\s*(\d{3}[a-z]{0,2})", lambda m: f"Ultra {m.group(1)} {m.group(2).upper()}"),
+        (r"(?<![\d.])9\s+(9\d{3}hx3d|9\d{3}hx)", lambda m: f"R9-{m.group(1).upper()}"),
+        (r"骁龙\s*x\s*(elite|plus)", lambda m: f"骁龙X {m.group(1).title()}"),
+        (r"(?:锐龙\s*r?|(?<![a-z0-9])r)([579])\s*[-\s]?\s*(\d{3})(?![\da-z])", lambda m: f"R{m.group(1)} {m.group(2)}"),
+        (r"ultra\s*(x?)\s*(\d)(?!\d)", lambda m: f"Ultra {m.group(1).upper()}{m.group(2)}"),
+        (r"(?<![a-z0-9])u([579])(?!\d)", lambda m: f"Ultra {m.group(1)}"),
+        (r"(?:酷睿|core)\s*([3579])(?!\d)", lambda m: f"Core {m.group(1)}"),
+        (r"(?<![a-z0-9])i([3579])(?:hx|h)?(?![\da-z])", lambda m: f"i{m.group(1)}"),
+        (r"锐龙\s*r?([579])(?!\d)", lambda m: f"R{m.group(1)}"),
+    ]
+    for p, f in pats:
+        ms = list(re.finditer(p, low))
+        if ms:  # 苹果名称里常先写「M4版」再写「M4 Max」，有 Pro/Max 的优先
+            cpu = f(next((m for m in ms if m.lastindex and m.lastindex >= 2 and m.group(2) in ("pro", "max")), ms[0]))
+            break
+    if cpu:
+        parts.append(cpu)
+    g = re.search(r"(rtx|gtx|rx)\s*(\d{3,4})\s*(ti|super|m)?(?![a-z])", low)
+    if g:
+        parts.append(f"{g.group(1).upper()} {g.group(2)}{(' ' + g.group(3).title()) if g.group(3) in ('ti', 'super') else (g.group(3) or '').upper()}")
+    rest = re.sub(r"(rtx|gtx|rx|mx|t)\s*\d{3,4}\s*(ti|super|m|max-q)?\s*\d+\s*g(?![a-z])", " ", low)
+    rest = re.sub(r"\d+\s*g\s*显存", " ", rest)
+    ram = sto = None
+    for m in re.finditer(r"(?<![\d.])(\d+)\s*(tb|t|gb|g)(?![a-z])", rest):
+        n, u = int(m.group(1)), m.group(2)[0]
+        if ram is None and u == "g" and n in (8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128):
+            ram = n
+        elif ram is not None and sto is None and ((u == "g" and n in (128, 256, 500, 512)) or (u == "t" and n in (1, 2, 4, 8))):
+            sto = f"{n}{'T' if u == 't' else 'G'}"
+    if ram:
+        parts.append(f"{ram}G" + (f"+{sto}" if sto else ""))
+    return " · ".join(parts)
+
 
 
 UNIT_RANGE = {"蛋白粉": (60, 1500), "肌酸": (100, 3000)}  # 合理的每公斤价格范围（元）
@@ -756,6 +840,12 @@ def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> No
         g = groups.setdefault(key, {"cat": v["c"], "key": key, "series": series, "names": Counter(), "skus": []})
         g["names"][disp] += 1
         g["skus"].append((pid, v["n"], daily_series(daily, pid)))
+    for k in [k for k in groups if k.startswith("笔记本|")]:  # 名称里没写尺寸的并进唯一的同名带尺寸机型：非凡Go Air → 非凡Go Air 14
+        sized = [k2 for k2 in groups if k2.startswith(k) and re.fullmatch(r"1[3-8]", k2[len(k):])]
+        if len(sized) == 1:
+            dst = groups[sized[0]]
+            dst["skus"] += groups[k]["skus"]
+            dst["names"].update(groups.pop(k)["names"])
     out = []
     for g in groups.values():
         skus = g["skus"]
@@ -772,7 +862,7 @@ def build_models(days: list[str], daily: list[dict], prod: dict, cut: str) -> No
             continue
         name = max(g["names"].items(), key=lambda kv: (kv[1], len(kv[0])))[0]
         m = {"cat": g["cat"], "key": g["key"], "name": name, "series": g["series"], "hist": hist,
-             "skus": [[s[0], s[1], s[2][-1]] for s in priced]}
+             "skus": [[s[0], s[1], s[2][-1]] + ([laptop_spec(s[1])] if g["cat"] == "笔记本" else []) for s in priced]}
         if g.get("kg"):
             m["kg"] = g["kg"]
             m["unit"] = round(priced[0][2][-1] / g["kg"], 1)  # 每公斤价格

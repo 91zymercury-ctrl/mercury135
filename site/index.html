@@ -528,7 +528,7 @@ function deriveModels(j) {
     const vs = samples.map((s) => s.lo[LOWEST]);
     const cur = m.skus[0] ? m.skus[0][2] : null;
     const weekAgo = samples.filter((s) => s.t <= Date.now() - 6.5 * D).pop();
-    return { ...m, samples, cur, curName: m.skus[0] ? m.skus[0][1] : "", curId: m.skus[0] ? m.skus[0][0] : "",
+    return { ...m, samples, cur, curName: m.skus[0] ? m.skus[0][1] : "", curSpec: m.skus[0] ? m.skus[0][3] || "" : "", curId: m.skus[0] ? m.skus[0][0] : "",
       lo30: vs.length ? Math.min(...vs) : null, hi30: vs.length ? Math.max(...vs) : null,
       wk: weekAgo ? weekAgo.lo[LOWEST] : null, sq: squash(m.name + " " + m.series + " " + m.cat),
       tracked: m.skus.map((s) => watched.get(s[0])).find(Boolean) || null };
@@ -542,7 +542,7 @@ function modelRow(m) {
     pill = `<span class="pill ${pct < 0 ? "low" : ""}">7 天 ${pct < 0 ? "↓" : "↑"}${Math.abs(pct).toFixed(0)}%</span>`;
   } else if (m.samples.length >= 3 && m.cur != null && m.cur <= m.lo30) pill = `<span class="pill low">30 天最低</span>`;
   b.innerHTML = `<span class="n">${esc(m.name)}</span><span class="price">${money(m.cur)}<small style="font-size:11px;color:var(--ink-3)"> 起</small></span>
-    <span class="m">${m.unit ? `<b style="color:var(--ink)">${unitText(m.unit)}</b>` : ""}<span>${m.skus.length} 个规格</span>${pill}${m.tracked ? `<span class="badge">已追踪</span>` : ""}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">最低：${esc(m.curName.slice(0, 26))}</span></span>`;
+    <span class="m">${m.unit ? `<b style="color:var(--ink)">${unitText(m.unit)}</b>` : ""}<span>${m.skus.length} 个规格</span>${pill}${m.tracked ? `<span class="badge">已追踪</span>` : ""}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">最低：${esc(m.curSpec || m.curName.slice(0, 26))}</span></span>`;
   b.addEventListener("click", () => openModel(m));
   return b;
 }
@@ -583,7 +583,7 @@ function marketSection() {
   const note = document.createElement("div"); note.className = "note"; note.style.marginTop = "6px";
   note.textContent = MCAT[S.mTab] && (S.mTab === "蛋白粉" || S.mTab === "肌酸")
     ? "同一款不同口味算一组，按名称里写的重量折算每公斤价格；没写重量的排在最后。蛋白粉不含增肌粉和胶原蛋白。价格是什么值得买百科上的全网最低起价，下单前点进比价页核实。"
-    : "价格是什么值得买百科列表上的全网最低起价，可能含国补、券、会员价或二手，点进去能看到每个规格并跳到比价页核实。";
+    : (S.mTab === "笔记本" ? "同系列同尺寸算一个型号，不同年份和配置都列在里面；“最低”后面是最便宜那一款的年份、处理器、显卡和内存。" : "") + "价格是什么值得买百科列表上的全网最低起价，可能含国补、券、会员价或二手，点进去能看到每个规格并跳到比价页核实。";
   wrap.append(note);
   return wrap;
 }
@@ -592,7 +592,7 @@ function openModel(m) {
   const sh = document.createElement("div"); sh.className = "sheet"; sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
   const cheapest = m.skus[0];
   const rows = m.skus.map((s, i) => `<div class="cmp-row${i === 0 ? " best" : ""}" style="grid-template-columns:1fr auto">
-      <span style="font-size:13px;line-height:1.35;overflow-wrap:anywhere">${esc(s[1])}</span><span class="p">${yuan(s[2])}</span>
+      <span style="font-size:13px;line-height:1.35;overflow-wrap:anywhere">${s[3] ? `<b style="display:block">${esc(s[3])}</b><span class="muted" style="font-size:12px">${esc(s[1])}</span>` : esc(s[1])}</span><span class="p">${yuan(s[2])}</span>
       <div class="src" style="grid-column:1/-1"><a class="linkbtn" href="https://wiki.smzdm.com/p/${encodeURIComponent(s[0])}/" target="_blank" rel="noopener noreferrer">各平台报价 ↗</a>${i === 0 ? "<span>当前最低</span>" : `<span>+${yuan(s[2] - cheapest[2]).slice(1)}</span>`}${m.kg ? `<span>${unitText(s[2] / m.kg)}</span>` : ""}</div></div>`).join("");
   sh.innerHTML = `<div class="row"><span style="font-size:28px">${(MCAT[m.cat] || ["🧩"])[0]}</span><h3 style="flex:1">${esc(m.name)}<div class="muted" style="font-weight:400">${esc(m.series)}</div></h3><button class="btn ghost sm" data-close>关闭</button></div>
     <div class="row wrap"><span class="price big">${money(m.cur)}</span><span class="badge">全网最低起价</span></div>
