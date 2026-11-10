@@ -1,8 +1,8 @@
 {
-"lastRun": "2026-11-10T18:15:57+08:00",
+"lastRun": "2026-11-11T06:21:29+08:00",
 "ok": true,
-"fetched": 30,
-"added": 30,
+"fetched": 25,
+"added": 25,
 "alerts": 0,
 "error": null,
 "schedule": "每 6 小时自动更新"
