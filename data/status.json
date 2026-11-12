@@ -1,9 +1,9 @@
 {
-"lastRun": "2026-11-12T12:16:18+08:00",
-"ok": true,
-"fetched": 30,
-"added": 30,
+"lastRun": "2026-11-12T18:14:48+08:00",
+"ok": false,
+"fetched": 0,
+"added": 0,
 "alerts": 0,
-"error": null,
+"error": "直连返回验证页(HTTP 202)，WebFetch返回503，网页显示的是之前的数据",
 "schedule": "每 6 小时自动更新"
 }
