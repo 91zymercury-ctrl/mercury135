@@ -1,9 +1,9 @@
 {
-"lastRun": "2026-11-12T06:14:32+08:00",
-"ok": false,
-"fetched": 0,
-"added": 0,
+"lastRun": "2026-11-12T12:16:18+08:00",
+"ok": true,
+"fetched": 30,
+"added": 30,
 "alerts": 0,
-"error": "订阅源被验证页拦截，WebFetch 也未能返回有效 JSON，网页显示的是之前的数据",
+"error": null,
 "schedule": "每 6 小时自动更新"
 }
